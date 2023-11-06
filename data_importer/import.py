@@ -56,6 +56,7 @@ class RequirementProcessor:
 
     @staticmethod
     def preprocess_text(text):
+        text = text.replace("ePA-Frontend", "").replace("E-Rezept-FdV", "")
         text = text.lower()
         text = text.translate(str.maketrans('', '', string.punctuation))
         text = re.sub(r'\d+', '', text)
@@ -168,7 +169,7 @@ class RequirementComparer(ABC):
                 if self.is_above_threshold(title_similarity, description_similarity):
                     self.store_similarity(epa_req, erp_req, title_similarity, description_similarity)
             if (i + 1) % 10 == 0:
-                logging.info(f"Progress: Compared {i + 1} ePA requirements.")
+                logging.info(f"Progress: Compared {i + 1} ePA requirements with {self.get_comparison_method()}")
 
         self.db_connection.commit()
 
@@ -230,7 +231,7 @@ class CustomRequirementComparer(RequirementComparer):
 
 if __name__ == '__main__':
     try:
-        processor = RequirementProcessor('../public/db/requirements2.db', True)
+        processor = RequirementProcessor('../public/db/requirements.db', True)
         processor.import_csv_to_db('data/epa_afos.csv')
         processor.import_csv_to_db('data/erp_afos.csv')
         cosine_comparer = CosineRequirementComparer(processor.conn, True)
