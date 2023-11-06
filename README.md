@@ -47,3 +47,26 @@ You can extend the script by implementing additional subclasses of `RequirementC
 - Ensure CSV files are encoded in UTF-8 to prevent encoding issues.
 - The script is set up to handle German text, as indicated by the use of the `de_core_news_md` Spacy model and German stopwords.
 - When extending the database schema or comparison methods, ensure consistency in the SQL queries and the associated class methods.
+## Results Display
+The results of the requirements comparison are displayed in a web interface using `compareRequirements.js`. This JavaScript file makes a fetch request to an API endpoint that returns the compared requirements data in JSON format. It then dynamically generates a table to display the data on the frontend.
+
+The `app.js` sets up an Express.js server and defines the API endpoint `/api/requirements` that queries the SQLite database for the similarity scores and returns them in the response.
+
+Here's a snippet of how the `compareRequirements.js` script processes and displays the data:
+
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/requirements')
+      // ... handle response and data
+});
+```
+
+And here's how the `app.js` sets up the server and endpoint:
+
+```javascript
+const express = require("express");
+const app = express();
+// ... rest of the server setup
+```
+
+These scripts work together to display the results of the requirements analysis in a user-friendly format.
