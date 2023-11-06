@@ -11,14 +11,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const thead = table.createTHead();
         const headerRow = thead.insertRow();
         const headers = [
-          'ePA Requirement Number', 
-          'ePA Title', 
-          'ePA Description', 
-          'eRP Requirement Number',        
-          'eRP Title', 
-          'eRP Description', 
-          'Similarity Score'
-        ];
+            'combined Number', 
+            'ePA Requirement Number', 
+            'ePA Title', 
+            'ePA Description', 
+            'eRP Requirement Number',        
+            'eRP Title', 
+            'eRP Description', 
+            'Comparison Method',
+            'Title Similarity Score',
+            'Description Similarity Score'
+          ];
         headers.forEach(text => {
           let th = document.createElement('th');
           th.textContent = text;
@@ -33,6 +36,10 @@ document.addEventListener('DOMContentLoaded', function() {
   
           // ePA Requirement Number
           cell = row.insertCell();
+          cell.textContent = item.combined_identifier;
+
+          // ePA Requirement Number
+          cell = row.insertCell();
           cell.textContent = item.epa_requirement_number;
   
           // ePA Title
@@ -44,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
           cell.textContent = item.epa_description;
 
           cell = row.insertCell();
-          cell.textContent = item.epa_requirement_number;
+          cell.textContent = item.erp_requirement_number;
   
   
           // eRP Title
@@ -54,10 +61,19 @@ document.addEventListener('DOMContentLoaded', function() {
           // eRP Description
           cell = row.insertCell();
           cell.textContent = item.erp_description;
-  
-          // Similarity Score
+        // comparison_method
           cell = row.insertCell();
-          cell.textContent = item.similarity_score;
+          cell.textContent = item.comparison_method;
+  
+          // Title Similarity Score
+          cell = row.insertCell();
+          // Format the score to two decimal places
+          cell.textContent = parseFloat(item.title_similarity_score).toFixed(2);
+  
+          // Description Similarity Score
+          cell = row.insertCell();
+          // Format the score to two decimal places
+          cell.textContent = parseFloat(item.description_similarity_score).toFixed(2);
         });
   
         // Append the table to the container

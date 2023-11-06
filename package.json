@@ -1,10 +1,10 @@
 {
-  "name": "express-hello-world",
+  "name": "spec_comparer",
   "version": "1.0.0",
-  "description": "Express Hello World on Render",
+  "description": "Tool to find similarities between specifications",
   "main": "app.js",
-  "repository": "https://github.com/render-examples/express-hello-world",
-  "author": "Render Developers",
+  "repository": "https://github.com/SvenSommer/Spec_comparer",
+  "author": "Sven Sommer",
   "license": "MIT",
   "private": false,
   "scripts": {
