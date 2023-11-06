@@ -1,0 +1,34 @@
+/* style.css */
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f4f4f4;
+}
+
+.container {
+    max-width: 2400px;
+}
+
+/* Make the table container scrollable instead of the whole page */
+#requirements-container {
+    max-height: calc(100vh - 120px);
+    /* Adjust the 120px if you have other headers or footers */
+    overflow-y: auto;
+    padding: 15px;
+}
+
+/* style.css */
+th,
+td {
+    white-space: nowrap;
+}
+
+/* This will make sure the table doesn't overflow its container */
+.dataTables_wrapper {
+    width: 100%;
+    margin: 0 auto;
+}
