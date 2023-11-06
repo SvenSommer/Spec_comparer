@@ -214,6 +214,19 @@ class CosineRequirementComparer(RequirementComparer):
     def is_above_threshold(self, title_similarity: float, description_similarity: float) -> bool:
         return title_similarity > 0.75 or description_similarity > 0.75
 
+class CustomRequirementComparer(RequirementComparer):
+    def calculate_similarity(self, text1: str, text2: str) -> float:
+        words_text1 = set(text1.split())
+        words_text2 = set(text2.split())
+        common_words = words_text1.intersection(words_text2)
+        total_words = words_text1.union(words_text2)
+        return float(len(common_words)) / len(total_words)
+
+    def get_comparison_method(self) -> str:
+        return 'custom_similarity'
+
+    def is_above_threshold(self, title_similarity: float, description_similarity: float) -> bool:
+        return title_similarity > 0.5 or description_similarity > 0.5
 
 if __name__ == '__main__':
     try:
@@ -223,7 +236,9 @@ if __name__ == '__main__':
         cosine_comparer = CosineRequirementComparer(processor.conn, True)
         cosine_comparer.compare_requirements()
         jaccard_comparer = JaccardRequirementComparer(processor.conn, False)
-        jaccard_comparer.compare_requirements()
+        jaccard_comparer.compare_requirements() 
+        custom_comparer = CustomRequirementComparer(processor.conn, False)
+        custom_comparer.compare_requirements()
 
        # comparer.fetch_sample_data('requirement_similarities', 100)
     except Exception as e:
