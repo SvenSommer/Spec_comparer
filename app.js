@@ -8,7 +8,7 @@ const port = process.env.PORT || 3001;
 
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-const dbPath = path.resolve(__dirname, 'public/db/requirements.db');
+const dbPath = path.resolve(__dirname, 'public/db/requirements2.db');
 
 app.use(express.static('public'));
 const cors = require('cors');
