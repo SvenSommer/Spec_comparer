@@ -65,10 +65,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // ePA Obligation
         cell = row.insertCell();
         cell.textContent = item.epa_obligation;
+        colorizeComparisonCells(cell, item.epa_obligation, item.erp_obligation);
 
         // ePA Test Procedure
         cell = row.insertCell();
         cell.textContent = item.epa_test_procedure;
+        colorizeComparisonCells(cell, item.epa_test_procedure, item.erp_test_procedure);
 
         // eRP Requirement Number
         cell = row.insertCell();
@@ -91,10 +93,12 @@ document.addEventListener('DOMContentLoaded', function () {
         // eRP Obligation
         cell = row.insertCell();
         cell.textContent = item.erp_obligation;
+        colorizeComparisonCells(cell, item.epa_obligation, item.erp_obligation);
 
         // eRP Test Procedure
         cell = row.insertCell();
         cell.textContent = item.erp_test_procedure;
+        colorizeComparisonCells(cell, item.epa_test_procedure, item.erp_test_procedure);
 
         // Comparison Method
         cell = row.insertCell();
@@ -143,5 +147,14 @@ function colorizeCellBackground(cell, score) {
     cell.style.color = 'white';
   } else {
     cell.style.color = 'black'; // For lighter backgrounds, use black text
+  }
+}
+
+// Function to colorize cell based on equality
+function colorizeComparisonCells(cell, value1, value2) {
+  if (value1 === value2) {
+    cell.style.backgroundColor = 'lightgreen'; // Color the cell green if equal
+  } else {
+    cell.style.backgroundColor = 'yellow'; // Color the cell yellow if different
   }
 }
