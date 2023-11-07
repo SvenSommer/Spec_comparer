@@ -3,6 +3,7 @@ html,
 body {
     height: 100%;
     margin: 0;
+    font-family: 'Roboto', sans-serif; /* Add the Roboto font to the body */
 }
 
 .table-hover tbody tr:hover {
@@ -21,14 +22,13 @@ body {
     padding: 15px;
 }
 
-/* style.css */
-th,
-td {
-    white-space: nowrap;
-}
-
 /* This will make sure the table doesn't overflow its container */
 .dataTables_wrapper {
     width: 100%;
     margin: 0 auto;
+}
+
+/* Apply the Roboto font to the table */
+table {
+    font-family: 'Roboto', sans-serif;
 }

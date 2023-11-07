@@ -126,6 +126,12 @@ class RequirementComparer(ABC):
                 erp_title TEXT,
                 epa_description TEXT,
                 erp_description TEXT,
+                epa_source TEXT,
+                erp_source TEXT,
+                epa_obligation TEXT,
+                erp_obligation TEXT,
+                epa_test_procedure TEXT,
+                erp_test_procedure TEXT,
                 title_similarity_score REAL,
                 description_similarity_score REAL
             )
@@ -146,12 +152,18 @@ class RequirementComparer(ABC):
             cursor.execute('''
                 INSERT INTO requirement_similarities (
                     combined_identifier, comparison_method, epa_requirement_number, erp_requirement_number,
-                    epa_title, erp_title, epa_description, erp_description, title_similarity_score, description_similarity_score
+                    epa_title, erp_title, epa_description, erp_description, 
+                    epa_source, erp_source, epa_obligation, erp_obligation, epa_test_procedure, erp_test_procedure,
+                    title_similarity_score, description_similarity_score
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 combined_identifier, method, epa['requirement_number'], erp['requirement_number'],
-                epa['title'], erp['title'], epa['description'], erp['description'], title_similarity, description_similarity
+                epa['title'], erp['title'], epa['description'], erp['description'],
+                epa.get('source', ''), erp.get('source', ''), 
+                epa.get('obligation', ''), erp.get('obligation', ''),
+                epa.get('test_procedure', ''), erp.get('test_procedure', ''),
+                title_similarity, description_similarity
             ))
         except sqlite3.IntegrityError:
             print(f"Entry with combined_identifier {combined_identifier} already exists.")

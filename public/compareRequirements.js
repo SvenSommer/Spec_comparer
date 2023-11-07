@@ -11,13 +11,19 @@ document.addEventListener('DOMContentLoaded', function () {
       const thead = table.createTHead();
       const headerRow = thead.insertRow();
       const headers = [
-        'combined Number',
+        'Combined Number',
         'ePA Requirement Number',
         'ePA Title',
         'ePA Description',
+        'ePA Source',
+        'ePA Obligation',
+        'ePA Test Procedure',
         'eRP Requirement Number',
         'eRP Title',
         'eRP Description',
+        'eRP Source',
+        'eRP Obligation',
+        'eRP Test Procedure',
         'Comparison Method',
         'Title Similarity Score',
         'Description Similarity Score'
@@ -34,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let row = tbody.insertRow();
         let cell;
 
-        // ePA Requirement Number
+        // Combined Identifier
         cell = row.insertCell();
         cell.textContent = item.combined_identifier;
 
@@ -52,19 +58,45 @@ document.addEventListener('DOMContentLoaded', function () {
         cell.textContent = item.epa_description;
         colorizeCellBackground(cell, item.description_similarity_score);
 
+        // ePA Source
+        cell = row.insertCell();
+        cell.textContent = item.epa_source;
+
+        // ePA Obligation
+        cell = row.insertCell();
+        cell.textContent = item.epa_obligation;
+
+        // ePA Test Procedure
+        cell = row.insertCell();
+        cell.textContent = item.epa_test_procedure;
+
+        // eRP Requirement Number
         cell = row.insertCell();
         cell.textContent = item.erp_requirement_number;
-
 
         // eRP Title
         cell = row.insertCell();
         cell.textContent = item.erp_title;
         colorizeCellBackground(cell, item.title_similarity_score);
+
         // eRP Description
         cell = row.insertCell();
         cell.textContent = item.erp_description;
         colorizeCellBackground(cell, item.description_similarity_score);
-        // comparison_method
+
+        // eRP Source
+        cell = row.insertCell();
+        cell.textContent = item.erp_source;
+
+        // eRP Obligation
+        cell = row.insertCell();
+        cell.textContent = item.erp_obligation;
+
+        // eRP Test Procedure
+        cell = row.insertCell();
+        cell.textContent = item.erp_test_procedure;
+
+        // Comparison Method
         cell = row.insertCell();
         cell.textContent = item.comparison_method;
 
@@ -72,11 +104,13 @@ document.addEventListener('DOMContentLoaded', function () {
         cell = row.insertCell();
         // Format the score to two decimal places
         cell.textContent = parseFloat(item.title_similarity_score).toFixed(2);
+        colorizeCellBackground(cell, item.title_similarity_score);
 
         // Description Similarity Score
         cell = row.insertCell();
         // Format the score to two decimal places
         cell.textContent = parseFloat(item.description_similarity_score).toFixed(2);
+        colorizeCellBackground(cell, item.description_similarity_score);
       });
 
       // Append the table to the container
@@ -93,6 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
     })
     .catch(error => console.error('Error fetching the requirements:', error));
 });
+
 // Function to colorize cell based on similarity score
 function colorizeCellBackground(cell, score) {
   const normalizedScore = parseFloat(score);
