@@ -210,7 +210,7 @@ class JaccardRequirementComparer(RequirementComparer):
         return 'jaccard_similarity'
 
     def is_above_threshold(self, title_similarity: float, description_similarity: float) -> bool:
-        return title_similarity > 0.6 or description_similarity > 0.6
+        return title_similarity > 0.6 or description_similarity > 0.5
 
 
 class CosineRequirementComparer(RequirementComparer):
@@ -225,7 +225,7 @@ class CosineRequirementComparer(RequirementComparer):
         return 'cosine_similarity'
 
     def is_above_threshold(self, title_similarity: float, description_similarity: float) -> bool:
-        return title_similarity > 0.75 or description_similarity > 0.75
+        return title_similarity > 0.75 or description_similarity > 0.55
 
 class CustomRequirementComparer(RequirementComparer):
     def calculate_similarity(self, text1: str, text2: str) -> float:
