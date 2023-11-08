@@ -152,9 +152,11 @@ function colorizeCellBackground(cell, score) {
 
 // Function to colorize cell based on equality
 function colorizeComparisonCells(cell, value1, value2) {
+  let saturation = 20; // Lower saturation for a softer color
+  let lightness = 90 - (0.5 * 40); // Decrease lightness based on score; higher score, darker color
   if (value1 === value2) {
-    cell.style.backgroundColor = 'lightgreen'; // Color the cell green if equal
+    cell.style.backgroundColor = `hsl(${120}, ${saturation}%, ${lightness}%)`;
   } else {
-    cell.style.backgroundColor = 'yellow'; // Color the cell yellow if different
+    cell.style.backgroundColor = `hsl(${60}, ${90}%, ${90}%)`;
   }
 }
