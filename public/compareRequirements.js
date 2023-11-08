@@ -13,15 +13,15 @@ document.addEventListener('DOMContentLoaded', function () {
       const headers = [
         'Combined Number',
         'ePA Requirement Number',
+        'ePA Source',
         'ePA Title',
         'ePA Description',
-        'ePA Source',
         'ePA Obligation',
         'ePA Test Procedure',
         'eRP Requirement Number',
+        'eRP Source',
         'eRP Title',
         'eRP Description',
-        'eRP Source',
         'eRP Obligation',
         'eRP Test Procedure',
         'Comparison Method',
@@ -48,6 +48,11 @@ document.addEventListener('DOMContentLoaded', function () {
         cell = row.insertCell();
         cell.textContent = item.epa_requirement_number;
 
+        // ePA Source
+        cell = row.insertCell();
+        cell.textContent = item.epa_source;
+        
+
         // ePA Title
         cell = row.insertCell();
         cell.textContent = item.epa_title;
@@ -58,9 +63,6 @@ document.addEventListener('DOMContentLoaded', function () {
         cell.textContent = item.epa_description;
         colorizeCellBackground(cell, item.description_similarity_score);
 
-        // ePA Source
-        cell = row.insertCell();
-        cell.textContent = item.epa_source;
 
         // ePA Obligation
         cell = row.insertCell();
@@ -76,6 +78,10 @@ document.addEventListener('DOMContentLoaded', function () {
         cell = row.insertCell();
         cell.textContent = item.erp_requirement_number;
 
+        // eRP Source
+        cell = row.insertCell();
+        cell.textContent = item.erp_source;
+
         // eRP Title
         cell = row.insertCell();
         cell.textContent = item.erp_title;
@@ -86,9 +92,6 @@ document.addEventListener('DOMContentLoaded', function () {
         cell.textContent = item.erp_description;
         colorizeCellBackground(cell, item.description_similarity_score);
 
-        // eRP Source
-        cell = row.insertCell();
-        cell.textContent = item.erp_source;
 
         // eRP Obligation
         cell = row.insertCell();
