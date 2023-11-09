@@ -4,29 +4,34 @@ document.addEventListener('DOMContentLoaded', function () {
     .then(data => {
       const container = document.getElementById('requirements-container');
       const table = document.createElement('table');
-      table.id = 'requirementsTable'; // Give the table an ID for the DataTables initialization
+      table.id = 'requirementsTable';
       table.className = 'table table-striped table-bordered';
+
+
+      const spec1Name = data.length > 0 ? `${data[0].spec_name}` : 'ePA';
+      const spec2Name = data.length > 0 ? `${data[0].spec_name}` : 'eRP';
+
 
       // Create the table header
       const thead = table.createTHead();
       const headerRow = thead.insertRow();
       const headers = [
-        'Combined Number',
-        'ePA Requirement Number',
-        'ePA Source',
-        'ePA Title',
-        'ePA Description',
-        'ePA Obligation',
-        'ePA Test Procedure',
-        'eRP Requirement Number',
-        'eRP Source',
-        'eRP Title',
-        'eRP Description',
-        'eRP Obligation',
-        'eRP Test Procedure',
+        `${spec1Name} Requirement Number`,
+        `${spec1Name} Source`,
+        `${spec1Name} Title`,
+        `${spec1Name} Description`,
+        `${spec1Name} Obligation`,
+        `${spec1Name} Test Procedure`,
+        `${spec2Name} Requirement Number`,
+        `${spec2Name} Source`,
+        `${spec2Name} Title`,
+        `${spec2Name} Description`,
+        `${spec2Name} Obligation`,
+        `${spec2Name} Test Procedure`,
         'Comparison Method',
         'Title Similarity Score',
-        'Description Similarity Score'
+        'Description Similarity Score',
+        'Combined Number',
       ];
       headers.forEach(text => {
         let th = document.createElement('th');
@@ -39,85 +44,80 @@ document.addEventListener('DOMContentLoaded', function () {
       data.forEach(item => {
         let row = tbody.insertRow();
         let cell;
+      
+        // ePA Requirement Number
+        cell = row.insertCell();
+        cell.textContent = item.spec1_requirement_number;
+      
+        // ePA Source
+        cell = row.insertCell();
+        cell.textContent = item.spec1_source;
+        
+        // ePA Title
+        cell = row.insertCell();
+        cell.textContent = item.spec1_title;
+        colorizeCellBackground(cell, item.title_similarity_score);
+      
+        // ePA Description
+        cell = row.insertCell();
+        cell.textContent = item.spec1_description;
+        colorizeCellBackground(cell, item.description_similarity_score);
+      
+        // ePA Obligation
+        cell = row.insertCell();
+        cell.textContent = item.spec1_obligation;
+        colorizeComparisonCells(cell, item.spec1_obligation, item.spec2_obligation);
+      
+        // ePA Test Procedure
+        cell = row.insertCell();
+        cell.textContent = item.spec1_test_procedure;
+        colorizeComparisonCells(cell, item.spec1_test_procedure, item.spec2_test_procedure);
+      
+        // eRP Requirement Number
+        cell = row.insertCell();
+        cell.textContent = item.spec2_requirement_number;
+      
+        // eRP Source
+        cell = row.insertCell();
+        cell.textContent = item.spec2_source;
+      
+        // eRP Title
+        cell = row.insertCell();
+        cell.textContent = item.spec2_title;
+        colorizeCellBackground(cell, item.title_similarity_score);
+      
+        // eRP Description
+        cell = row.insertCell();
+        cell.textContent = item.spec2_description;
+        colorizeCellBackground(cell, item.description_similarity_score);
+      
+        // eRP Obligation
+        cell = row.insertCell();
+        cell.textContent = item.spec2_obligation;
+        colorizeComparisonCells(cell, item.spec1_obligation, item.spec2_obligation);
+      
+        // eRP Test Procedure
+        cell = row.insertCell();
+        cell.textContent = item.spec2_test_procedure;
+        colorizeComparisonCells(cell, item.spec1_test_procedure, item.spec2_test_procedure);
+      
+        // Comparison Method
+        cell = row.insertCell();
+        cell.textContent = item.comparison_method;
+      
+        // Title Similarity Score
+        cell = row.insertCell();
+        cell.textContent = parseFloat(item.title_similarity_score).toFixed(2);
+        colorizeCellBackground(cell, item.title_similarity_score);
+      
+        // Description Similarity Score
+        cell = row.insertCell();
+        cell.textContent = parseFloat(item.description_similarity_score).toFixed(2);
+        colorizeCellBackground(cell, item.description_similarity_score);
 
         // Combined Identifier
         cell = row.insertCell();
         cell.textContent = item.combined_identifier;
-
-        // ePA Requirement Number
-        cell = row.insertCell();
-        cell.textContent = item.epa_requirement_number;
-
-        // ePA Source
-        cell = row.insertCell();
-        cell.textContent = item.epa_source;
-        
-
-        // ePA Title
-        cell = row.insertCell();
-        cell.textContent = item.epa_title;
-        colorizeCellBackground(cell, item.title_similarity_score);
-
-        // ePA Description
-        cell = row.insertCell();
-        cell.textContent = item.epa_description;
-        colorizeCellBackground(cell, item.description_similarity_score);
-
-
-        // ePA Obligation
-        cell = row.insertCell();
-        cell.textContent = item.epa_obligation;
-        colorizeComparisonCells(cell, item.epa_obligation, item.erp_obligation);
-
-        // ePA Test Procedure
-        cell = row.insertCell();
-        cell.textContent = item.epa_test_procedure;
-        colorizeComparisonCells(cell, item.epa_test_procedure, item.erp_test_procedure);
-
-        // eRP Requirement Number
-        cell = row.insertCell();
-        cell.textContent = item.erp_requirement_number;
-
-        // eRP Source
-        cell = row.insertCell();
-        cell.textContent = item.erp_source;
-
-        // eRP Title
-        cell = row.insertCell();
-        cell.textContent = item.erp_title;
-        colorizeCellBackground(cell, item.title_similarity_score);
-
-        // eRP Description
-        cell = row.insertCell();
-        cell.textContent = item.erp_description;
-        colorizeCellBackground(cell, item.description_similarity_score);
-
-
-        // eRP Obligation
-        cell = row.insertCell();
-        cell.textContent = item.erp_obligation;
-        colorizeComparisonCells(cell, item.epa_obligation, item.erp_obligation);
-
-        // eRP Test Procedure
-        cell = row.insertCell();
-        cell.textContent = item.erp_test_procedure;
-        colorizeComparisonCells(cell, item.epa_test_procedure, item.erp_test_procedure);
-
-        // Comparison Method
-        cell = row.insertCell();
-        cell.textContent = item.comparison_method;
-
-        // Title Similarity Score
-        cell = row.insertCell();
-        // Format the score to two decimal places
-        cell.textContent = parseFloat(item.title_similarity_score).toFixed(2);
-        colorizeCellBackground(cell, item.title_similarity_score);
-
-        // Description Similarity Score
-        cell = row.insertCell();
-        // Format the score to two decimal places
-        cell.textContent = parseFloat(item.description_similarity_score).toFixed(2);
-        colorizeCellBackground(cell, item.description_similarity_score);
       });
 
       // Append the table to the container
