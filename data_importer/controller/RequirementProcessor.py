@@ -12,10 +12,8 @@ from nltk.stem import SnowballStemmer
 from Requirement import Requirement
 class RequirementProcessor:
     def __init__(self, data_writer):
-        print("Hello from RequirementProcessor")
         self.data_writer = data_writer
         self.nlp = spacy.load('de_core_news_md')
-        print("Loaded de_core_news_md")
         nltk.download('stopwords')
         nltk.download('wordnet')
 
@@ -70,8 +68,7 @@ class RequirementProcessor:
 
             # Create a Requirement instance
             requirement = Requirement(
-                spec_name=specification.name,
-                spec_version=specification.version,
+                specification_id=specification.id,  # This should be the primary key ID from the specifications table
                 source=source,
                 requirement_number=requirement_number,
                 title=title,

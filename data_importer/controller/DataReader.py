@@ -28,8 +28,13 @@ class DataReader:
         Fetch requirements for a given spec_name and spec_version.
         """
         self.cursor.execute(
-            'SELECT * FROM requirements WHERE spec_name=? AND spec_version=?', 
-            (specification['name'], specification['version'])
+            '''
+            SELECT r.*, s.name, s.version, s.fullname, s.file_path 
+            FROM requirements r 
+            JOIN specifications s ON r.specification_id = s.id 
+            WHERE s.id=? 
+            ''', 
+            (specification['id'],)
         )
         return self.cursor.fetchall()
 
@@ -37,7 +42,15 @@ class DataReader:
         """
         Retrieve a specific requirement by its number.
         """
-        self.cursor.execute('SELECT * FROM requirements WHERE requirement_number = ?', (requirement_number,))
+        self.cursor.execute(
+            '''
+            SELECT r.*, s.name, s.version, s.fullname, s.file_path 
+            FROM requirements r 
+            JOIN specifications s ON r.specification_id = s.id 
+            WHERE r.requirement_number = ? 
+            ''', 
+            (requirement_number,)
+        )
         return self.cursor.fetchone()
 
     def search_requirements(self, search_query):
@@ -50,10 +63,44 @@ class DataReader:
     
     def get_all_specifications(self):
         """
-        Retrieve all specifications from the database.
+        Retrieve all specifications from the database along with the count of associated requirements.
         """
-        self.cursor.execute('SELECT * FROM specifications')
+        self.cursor.execute(
+            '''
+            SELECT s.*, COUNT(r.specification_id) as requirement_count 
+            FROM specifications s
+            LEFT JOIN requirements r ON s.id = r.specification_id 
+            GROUP BY s.id
+            '''
+        )
         return self.cursor.fetchall()
+    
+    def get_similarity_counts(self):
+        """
+        Retrieve the count of similar requirements between each pair of specifications.
+        """
+        self.cursor.execute(
+            '''
+            SELECT 
+                rs.spec1_id, 
+                rs.spec2_id, 
+                s1.name as spec1_name, 
+                s1.version as spec1_version, 
+                s2.name as spec2_name, 
+                s2.version as spec2_version, 
+                COUNT(*) as similarity_count
+            FROM 
+                requirement_similarities rs
+            JOIN 
+                specifications s1 ON rs.spec1_id = s1.id
+            JOIN 
+                specifications s2 ON rs.spec2_id = s2.id
+            GROUP BY 
+                rs.spec1_id, rs.spec2_id
+            '''
+        )
+        return self.cursor.fetchall()
+
 
     def close_connection(self):
         """

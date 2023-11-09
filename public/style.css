@@ -32,3 +32,82 @@ body {
 table {
     font-family: 'Roboto', sans-serif;
 }
+
+
+/* Grundlegende Styling-Optionen für die Tabelle */
+#similarityMatrixTable {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  /* Zellen im Kopfbereich (TH) */
+  #similarityMatrixTable th {
+    background-color: #f2f2f2; /* Hellgrauer Hintergrund für Kopfzeilen */
+    color: #333; /* Dunkle Schriftfarbe */
+    padding: 10px; /* Etwas Platz in den Zellen */
+    text-align: left; /* Text linksbündig ausrichten */
+    border: 1px solid #ddd; /* Dünne Linie für den Zellenrand */
+  }
+  
+  /* Zellen im Körper (TD) */
+  #similarityMatrixTable td {
+    padding: 8px; /* Etwas Platz in den Zellen */
+    text-align: center; /* Text zentrieren */
+    border: 1px solid #ddd; /* Dünne Linie für den Zellenrand */
+  }
+  
+  /* Farbkodierung für Zellen basierend auf Ähnlichkeitswert */
+  #similarityMatrixTable td.high-similarity {
+    background-color: #c6efce; /* Grün für hohe Ähnlichkeit */
+  }
+  
+  #similarityMatrixTable td.medium-similarity {
+    background-color: #ffeb9c; /* Gelb für mittlere Ähnlichkeit */
+  }
+  
+  #similarityMatrixTable td.low-similarity {
+    background-color: #ffc7ce; /* Rot für niedrige Ähnlichkeit */
+  }
+  
+  /* Hover-Effekt für Zeilen */
+  #similarityMatrixTable tr:hover {
+    background-color: #ddd; /* Dunklerer Hintergrund beim Überfahren */
+  }
+  
+  /* Responsive Verhalten für die Tabelle */
+  @media screen and (max-width: 768px) {
+    #similarityMatrixTable {
+      display: block;
+      overflow-x: auto; /* Ermöglicht das Scrollen bei kleineren Bildschirmen */
+    }
+  }
+  
+  /* Tooltip-Styling */
+  .tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black; /* Stil für Tooltip-Trigger */
+  }
+  
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -60px; /* Zentrierung des Tooltip-Texts */
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
+  

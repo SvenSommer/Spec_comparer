@@ -2,6 +2,7 @@ from typing import Dict, List
 import sqlite3
 from Specification import Specification
 
+
 class DataWriter:
     def __init__(self, conn, overwrite) -> None:
         self.conn = conn
@@ -23,8 +24,8 @@ class DataWriter:
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS requirements (
-                spec_name TEXT,
-                spec_version TEXT,            
+                id INTEGER PRIMARY KEY,
+                specification_id INTEGER,
                 source TEXT,
                 requirement_number TEXT,
                 title TEXT,
@@ -32,15 +33,15 @@ class DataWriter:
                 processed_title TEXT,
                 processed_description TEXT,
                 obligation TEXT,
-                test_procedure TEXT
-               
+                test_procedure TEXT,
+                FOREIGN KEY(specification_id) REFERENCES specifications(id)
             )
         """
         )
 
         self.cursor.execute(
             """
-            CREATE TABLE specifications (
+            CREATE TABLE IF NOT EXISTS specifications (
                 id INTEGER PRIMARY KEY,
                 name TEXT,
                 version TEXT,
@@ -55,10 +56,8 @@ class DataWriter:
             """
             CREATE TABLE IF NOT EXISTS requirement_similarities (
                 combined_identifier TEXT PRIMARY KEY,
-                spec_name TEXT,
-                spec1_version TEXT,       
-                spec2 TEXT,
-                spec2_version TEXT,       
+                spec1_id INTEGER,
+                spec2_id INTEGER,
                 spec1_requirement_number TEXT,
                 spec2_requirement_number TEXT,
                 spec1_title TEXT,
@@ -73,7 +72,9 @@ class DataWriter:
                 spec2_test_procedure TEXT,
                 title_similarity_score REAL,
                 description_similarity_score REAL,
-                comparison_method TEXT
+                comparison_method TEXT,
+                FOREIGN KEY(spec1_id) REFERENCES specifications(id),
+                FOREIGN KEY(spec2_id) REFERENCES specifications(id)
             )
         """
         )
@@ -86,7 +87,12 @@ class DataWriter:
             INSERT OR IGNORE INTO specifications (name, version, fullname, file_path)
             VALUES (?, ?, ?,?)
             """,
-            (parsed_file.spec_name, parsed_file.spec_version, parsed_file.filename, parsed_file.file_path),
+            (
+                parsed_file.spec_name,
+                parsed_file.spec_version,
+                parsed_file.filename,
+                parsed_file.file_path,
+            ),
         )
         self.conn.commit()
 
@@ -102,9 +108,18 @@ class DataWriter:
         if spec_id:
             spec_id = spec_id[0]
         else:
-            raise Exception(f"Specification {parsed_file.spec_name} v{parsed_file.spec_version} could not be retrieved or added to the database.")
+            raise Exception(
+                f"Specification {parsed_file.spec_name} v{parsed_file.spec_version} could not be retrieved or added to the database."
+            )
 
-        spec = Specification(spec_id, parsed_file.spec_name, parsed_file.spec_version, parsed_file.filename,parsed_file.file_path, [])
+        spec = Specification(
+            spec_id,
+            parsed_file.spec_name,
+            parsed_file.spec_version,
+            parsed_file.filename,
+            parsed_file.file_path,
+            [],
+        )
 
         return spec
 
@@ -112,14 +127,13 @@ class DataWriter:
         self.cursor.execute(
             """
                     INSERT INTO requirements (
-                        spec_name, spec_version, source, requirement_number, title, description,
+                        specification_id, source, requirement_number, title, description,
                         processed_title, processed_description, obligation, test_procedure
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
             (
-                requirement.spec_name,
-                requirement.spec_version,
+                requirement.specification_id,
                 requirement.source,
                 requirement.requirement_number,
                 requirement.title,
@@ -132,7 +146,6 @@ class DataWriter:
         )
 
 
-
     def add_requirement_similarities(
         self,
         spec1: Dict,
@@ -141,15 +154,15 @@ class DataWriter:
         title_similarity: float,
         description_similarity: float,
     ):
-        combined_identifier = f"{spec1['spec_name']}_{spec1['spec_version']}_{spec2['spec_name']}_{spec2['spec_version']}_{spec1['requirement_number']}_{spec2['requirement_number']}"
-
+        combined_identifier = f"{spec1['name']}_{spec1['version']}_{spec1['requirement_number']}_{spec1['name']}_{spec1['version']}_{spec2['requirement_number']}"
 
         try:
             self.cursor.execute(
                 """
                 INSERT INTO requirement_similarities (
                     combined_identifier, 
-                    spec_name, spec1_version, spec2, spec2_version,
+                    spec1_id, 
+                    spec2_id,
                     spec1_requirement_number, spec2_requirement_number,
                     spec1_title, spec2_title, 
                     spec1_description, spec2_description, 
@@ -159,14 +172,12 @@ class DataWriter:
                     title_similarity_score, description_similarity_score, 
                     comparison_method
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
                 (
                     combined_identifier,
-                    spec1["spec_name"],
-                    spec1["spec_version"],
-                    spec2["spec_name"],
-                    spec2["spec_version"],
+                    spec1["specification_id"],  
+                    spec2["specification_id"],
                     spec1["requirement_number"],
                     spec2["requirement_number"],
                     spec1["title"],

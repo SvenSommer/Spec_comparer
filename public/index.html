@@ -1,26 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>ePA and e-prescription Requirements Comparison</title>
-  <link href="style.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css">
-  <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-  <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/colreorder/1.5.2/js/dataTables.colReorder.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.5.2/css/colReorder.dataTables.min.css">
-  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
-
-  
-  
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Specification Selection</title>
+<script src="index.js"></script>
 </head>
 <body>
-  <div class="container mt-12">
-    <h1 class="text-center mb-12">Requirements Comparison</h1>
-    <div id="requirements-container" class="table-responsive">
-      <!-- The requirements table will be loaded here by JavaScript -->
+
+<h1>Select Specifications and Versions</h1>
+
+<form id="specSelectionForm" onsubmit="redirectToMatrix(event)">
+    <div id="specifications-container">
+      <!-- Spezifikationen mit Checkboxen und Dropdown-Menüs werden hier dynamisch eingefügt -->
     </div>
-  </div>
-  <script src="compareRequirements.js"></script>
+    <button type="submit">Compare Selected Specifications</button>
+  </form>
+
 </body>
 </html>

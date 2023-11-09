@@ -1,15 +1,20 @@
 document.addEventListener('DOMContentLoaded', function () {
-  fetch('/api/requirements')
+  const params = new URLSearchParams(window.location.search);
+  const spec1Id = params.get('spec1_id');
+  const spec2Id = params.get('spec2_id');
+  const spec1Name = params.get('spec1_name');
+  const spec2Name = params.get('spec2_name');
+
+  console.log("spec1Id", spec1Id)
+  console.log("spec2Id", spec2Id)
+
+  fetch('/api/requirements?spec1Id=' + spec1Id + '&spec2Id=' + spec2Id)
     .then(response => response.json())
     .then(data => {
       const container = document.getElementById('requirements-container');
       const table = document.createElement('table');
       table.id = 'requirementsTable';
       table.className = 'table table-striped table-bordered';
-
-
-      const spec1Name = data.length > 0 ? `${data[0].spec_name}` : 'ePA';
-      const spec2Name = data.length > 0 ? `${data[0].spec_name}` : 'eRP';
 
 
       // Create the table header
