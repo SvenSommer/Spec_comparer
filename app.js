@@ -22,25 +22,37 @@ app.get('/api/specifications', (req, res) => {
 
   const sql = `
         SELECT 
-        s.name, 
-        GROUP_CONCAT(DISTINCT s.version) as versions, 
-        GROUP_CONCAT(DISTINCT s.id) as ids
-      FROM 
-        specifications s
-      LEFT JOIN 
-        requirements r ON s.id = r.specification_id
-      GROUP BY 
-        s.name`;
+          s.name, 
+          GROUP_CONCAT(DISTINCT s.version) as versions, 
+          GROUP_CONCAT(DISTINCT s.id) as ids,
+          GROUP_CONCAT(DISTINCT t.name) as types,
+          GROUP_CONCAT(DISTINCT c.name) as categories,
+          GROUP_CONCAT(DISTINCT t.id) as type_ids,
+          GROUP_CONCAT(DISTINCT c.id) as category_ids
+        FROM 
+          specifications s
+        LEFT JOIN 
+          requirements r ON s.id = r.specification_id
+        LEFT JOIN 
+          types t ON s.type_id = t.id
+        LEFT JOIN 
+          categories c ON s.category_id = c.id
+        GROUP BY 
+          s.name`;
 
   db.all(sql, [], (err, rows) => {
     if (err) {
       res.status(500).send('Error executing the query');
     } else {
-      // Transformieren Sie die kommagetrennte Liste in Arrays für die Antwort
+      // Transform the comma-separated lists into arrays for the response
       const transformedRows = rows.map(row => ({
         ...row,
         versions: row.versions ? row.versions.split(',') : [],
-        ids: row.ids ? row.ids.split(',').map(id => parseInt(id, 10)) : []
+        ids: row.ids ? row.ids.split(',').map(id => parseInt(id, 10)) : [],
+        types: row.types ? row.types.split(',') : [],
+        categories: row.categories ? row.categories.split(',') : [],
+        type_ids: row.type_ids ? row.type_ids.split(',').map(id => parseInt(id, 10)) : [],
+        category_ids: row.category_ids ? row.category_ids.split(',').map(id => parseInt(id, 10)) : []
       }));
       res.json(transformedRows);
     }
@@ -48,6 +60,7 @@ app.get('/api/specifications', (req, res) => {
 
   db.close();
 });
+
 
 
 app.get('/api/requirements', (req, res) => {
@@ -120,6 +133,40 @@ app.get('/api/matrix', (req, res) => {
 
   // Führe die SQL-Abfrage mit den IDs als Parameter aus.
   db.all(sql, [...specIds, ...specIds], (err, rows) => {
+    if (err) {
+      console.error(err.message);
+      res.status(500).send('Error executing the query');
+    } else {
+      res.json(rows);
+    }
+    db.close();
+  });
+});
+
+
+app.get('/api/specs', (req, res) => {
+  let db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {
+    if (err) {
+      console.error(err.message);
+      res.status(500).send('Error connecting to the database');
+      return;
+    }
+  });
+
+  const specIds = req.query.ids;
+  if (!specIds || !Array.isArray(specIds) || specIds.length === 0) {
+    res.status(400).send('No specification IDs provided');
+    return;
+  }
+
+  const placeholders = specIds.map(() => '?').join(',');
+  const sql = `
+    SELECT id, name, version
+    FROM specifications
+    WHERE id IN (${placeholders})
+  `;
+
+  db.all(sql, specIds, (err, rows) => {
     if (err) {
       console.error(err.message);
       res.status(500).send('Error executing the query');

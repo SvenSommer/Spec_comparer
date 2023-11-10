@@ -1,21 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Specification Selection</title>
-<script src="index.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spezifikationsvergleich</title>
+    <link rel="stylesheet" href="style.css"> <!-- Your CSS file -->
+    <script src="index.js"></script>
 </head>
+
 <body>
 
-<h1>Select Specifications and Versions</h1>
-
-<form id="specSelectionForm" onsubmit="redirectToMatrix(event)">
-    <div id="specifications-container">
-      <!-- Spezifikationen mit Checkboxen und Dropdown-Menüs werden hier dynamisch eingefügt -->
+    <div
+        class="content-detail__block content-detail__block--filter-table content-detail__block--breaker content-detail__block--top-half content-detail__block--bottom-half">
+        <div class="documents-table">
+            <div class="documents-table__filter">
+                <form id="specSelectionForm" class="filter filter--documentsearch js-documentsearch-filter"
+                    onsubmit="redirectToMatrix(event)">
+                    <h1 class="headline headline--3 filter__headline">Spezifikationsvergleich</h1>
+                    <div id="specifications-container" class="filter__data">
+                        <!-- Specifications with checkboxes and drop-downs will be dynamically inserted here -->
+                    </div>
+                    <div id="specMessage" class="filter__message"></div>
+                    <!-- The message will be displayed here -->
+            </div>
+            <div class="filter__actions">
+                <button type="submit" class="button button--primary filter__button">
+                    <span class="button__text">Vergleich starten</span>
+                </button>
+            </div>
+            </form>
+        </div>
     </div>
-    <button type="submit">Compare Selected Specifications</button>
-  </form>
+    </div>
+
 
 </body>
+
 </html>

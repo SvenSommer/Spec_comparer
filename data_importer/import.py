@@ -57,7 +57,7 @@ def format_similarity_counts(similarity_data):
 
 if __name__ == "__main__":
     try:
-        do_import = True
+        do_import = False
 
         conn = sqlite3.connect("../public/db/requirements.db")
         document_helper = DocumentHelper("data/")
@@ -75,7 +75,7 @@ if __name__ == "__main__":
                     processor.import_requirements_to_db(specification)
 
 
-            custom_comparer = CustomRequirementComparer(conn, db_reader, db_writer)
+            custom_comparer = CustomRequirementComparer(conn, db_reader, db_writer, 0.2)
 
             # Retrieve all specifications from the database.
             specifications = db_reader.get_all_specifications()
@@ -93,8 +93,10 @@ if __name__ == "__main__":
 
         # Now pass this data to the format function
         format_similarity_counts(similarity_data)
+        specifications =db_reader.get_all_specifications()
 
-
+        for spec in specifications:
+            print(f"Name: {spec['name']}, Type: {spec['type']}, Category: {spec['category']}")
         # cosine_comparer.compare_requirements()
         # jaccard_comparer = JaccardRequirementComparer(processor.conn, False)
         # jaccard_comparer.compare_requirements()

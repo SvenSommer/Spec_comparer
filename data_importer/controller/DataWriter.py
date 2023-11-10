@@ -9,6 +9,7 @@ class DataWriter:
         self.cursor = self.conn.cursor()
         self.conn.row_factory = self.dict_factory
         self.configure_database(overwrite)
+        self.populate_static_data()
 
     def dict_factory(self, cursor, row):
         d = {}
@@ -20,7 +21,28 @@ class DataWriter:
         if overwrite:
             self.cursor.execute("DROP TABLE IF EXISTS requirements")
             self.cursor.execute("DROP TABLE IF EXISTS specifications")
+            self.cursor.execute("DROP TABLE IF EXISTS categories")
+            self.cursor.execute("DROP TABLE IF EXISTS types")
             self.cursor.execute("DROP TABLE IF EXISTS requirement_similarities")
+
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE
+            )
+            """
+        )
+
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS types (
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE
+            )
+            """
+        )
+
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS requirements (
@@ -47,7 +69,11 @@ class DataWriter:
                 version TEXT,
                 fullname TEXT,
                 file_path TEXT,
-                UNIQUE(name, version)
+                category_id INTEGER,
+                type_id INTEGER,
+                UNIQUE(name, version),
+                FOREIGN KEY(category_id) REFERENCES categories(id),
+                FOREIGN KEY(type_id) REFERENCES types(id)
             )
         """
         )
@@ -80,23 +106,68 @@ class DataWriter:
         )
         self.conn.commit()
 
-    def get_or_create_specification(self, parsed_file):
-        # Einfügen der Spezifikation, falls sie noch nicht existiert
+    def populate_static_data(self):
+        static_data = [
+            ('Konzepte', 'Spezifikationsdokumente'),
+            ('Systemlösung', 'Spezifikationsdokumente'),
+            ('Spezifikationen', 'Spezifikationsdokumente'),
+            ('Feature-Spezifikationen', 'Spezifikationsdokumente'),
+            ('Richtlinien', 'Spezifikationsdokumente'),
+            ('Produkttyp Steckbriefe', 'Steckbriefe'),
+            ('Anbietertyp Steckbriefe', 'Steckbriefe'),
+            ('Anwendungssteckbrief', 'Steckbriefe'),
+            ('Verzeichnis', 'Steckbriefe'),
+            ('Unbekannt', 'Unbekannt')
+        ]
+
+        for type_name, category_name in static_data:
+            self.insert_category(category_name)
+            self.insert_type(type_name)
+
+    def insert_category(self, name):
         self.cursor.execute(
             """
-            INSERT OR IGNORE INTO specifications (name, version, fullname, file_path)
-            VALUES (?, ?, ?,?)
+            INSERT INTO categories (name)
+            VALUES (?)
+            ON CONFLICT(name) DO NOTHING
+            """, (name,)
+        )
+        self.conn.commit()
+
+    def insert_type(self, name):
+        self.cursor.execute(
+            """
+            INSERT INTO types (name)
+            VALUES (?)
+            ON CONFLICT(name) DO NOTHING
+            """, (name,)
+        )
+        self.conn.commit()
+
+    def get_or_create_specification(self, parsed_file):
+        # Get or create the category_id from the database
+        category_id = self.get_or_create_category_id(parsed_file.category_type)
+        # Get or create the type_id from the database
+        type_id = self.get_or_create_type_id(parsed_file.spec_type)
+
+        # Insert the specification if it does not exist, using the IDs for category and type
+        self.cursor.execute(
+            """
+            INSERT INTO specifications (name, version, fullname, file_path, category_id, type_id)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
             (
                 parsed_file.spec_name,
                 parsed_file.spec_version,
                 parsed_file.filename,
                 parsed_file.file_path,
+                category_id,
+                type_id
             ),
         )
         self.conn.commit()
 
-        # Abrufen der Spezifikations-ID
+        # Retrieve the specification ID
         self.cursor.execute(
             """
             SELECT id FROM specifications
@@ -122,6 +193,31 @@ class DataWriter:
         )
 
         return spec
+    
+    def get_or_create_category_id(self, category_name):
+        # First, try to get the category ID from the database
+        self.cursor.execute("SELECT id FROM categories WHERE name = ?", (category_name,))
+        result = self.cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            # If the category does not exist, insert it and then return the new ID
+            self.cursor.execute("INSERT INTO categories (name) VALUES (?)", (category_name,))
+            self.conn.commit()
+            return self.cursor.lastrowid
+
+    # This function should be within the DataWriter class
+    def get_or_create_type_id(self, type_name):
+        # First, try to get the type ID from the database
+        self.cursor.execute("SELECT id FROM types WHERE name = ?", (type_name,))
+        result = self.cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            # If the type does not exist, insert it and then return the new ID
+            self.cursor.execute("INSERT INTO types (name) VALUES (?)", (type_name,))
+            self.conn.commit()
+            return self.cursor.lastrowid
 
     def add_requirement(self, requirement):
         self.cursor.execute(

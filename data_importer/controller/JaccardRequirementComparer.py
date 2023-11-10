@@ -12,5 +12,5 @@ class JaccardRequirementComparer(RequirementComparer):
     def get_comparison_method(self) -> str:
         return 'jaccard_similarity'
 
-    def is_above_threshold(self, title_similarity: float, description_similarity: float) -> bool:
+    def is_above_threshold(self, title_similarity: float, description_similarity: float, treshold: float) -> bool:
         return title_similarity > 0.6 or description_similarity > 0.5

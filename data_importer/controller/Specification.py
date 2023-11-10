@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-
-
 class Specification:
     id: int
     name: str

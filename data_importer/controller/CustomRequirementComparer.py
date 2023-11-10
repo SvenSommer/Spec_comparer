@@ -12,5 +12,5 @@ class CustomRequirementComparer(RequirementComparer):
     def get_comparison_method(self) -> str:
         return 'custom_similarity'
 
-    def is_above_threshold(self, title_similarity: float, description_similarity: float) -> bool:
-        return title_similarity > 0.5 or description_similarity > 0.5
+    def is_above_threshold(self, title_similarity: float, description_similarity: float, treshold: float) -> bool:
+        return title_similarity > treshold or description_similarity > treshold

@@ -21,20 +21,6 @@ class DataReader:
         self.cursor.execute('SELECT * FROM requirements')
         return self.cursor.fetchall()
     
-    def get_requirements_by_specification(self, specification) -> List[Dict]:
-        """
-        Fetch requirements for a given spec_name and spec_version.
-        """
-        self.cursor.execute(
-            '''
-            SELECT r.*, s.name, s.version, s.fullname, s.file_path 
-            FROM requirements r 
-            JOIN specifications s ON r.specification_id = s.id 
-            WHERE s.id=? 
-            ''', 
-            (specification['id'],)
-        )
-        return self.cursor.fetchall()
 
     def get_requirement_by_number(self, requirement_number):
         """
