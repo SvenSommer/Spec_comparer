@@ -1,12 +1,11 @@
 import logging
 import sqlite3
+import os
 
 import sys
 
 
-
 sys.path.append("./controller")
-from Specification import Specification
 from RequirementProcessor import RequirementProcessor
 from DataReader import DataReader
 from DataWriter import DataWriter
@@ -19,12 +18,17 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
+
 def format_similarity_counts(similarity_data):
     # Prepare table headers
     headers = [
-        "Spec1 ID", "Spec1 Name", "Spec1 Version",
-        "Spec2 ID", "Spec2 Name", "Spec2 Version",
-        "Similarity Count"
+        "Spec1 ID",
+        "Spec1 Name",
+        "Spec1 Version",
+        "Spec2 ID",
+        "Spec2 Name",
+        "Spec2 Version",
+        "Similarity Count",
     ]
 
     # Determine the maximum width for each column
@@ -42,24 +46,35 @@ def format_similarity_counts(similarity_data):
 
     # Print each row of data
     for item in similarity_data:
-        print(row_format.format(
-            item['spec1_id'],
-            item['spec1_name'],
-            item['spec1_version'],
-            item['spec2_id'],
-            item['spec2_name'],
-            item['spec2_version'],
-            item['similarity_count']
-        ))
-
-
+        print(
+            row_format.format(
+                item["spec1_id"],
+                item["spec1_name"],
+                item["spec1_version"],
+                item["spec2_id"],
+                item["spec2_name"],
+                item["spec2_version"],
+                item["similarity_count"],
+            )
+        )
 
 
 if __name__ == "__main__":
     try:
         do_import = True
 
-        conn = sqlite3.connect("../public/db/requirements.db")
+        db_directory = "../public/db"
+        db_file = "requirements.db"
+        db_path = os.path.join(db_directory, db_file)
+
+        # Create the directory if it does not exist
+        if not os.path.exists(db_directory):
+            os.makedirs(db_directory)
+
+        # Connect to the database file (this will create it if it does not exist)
+        conn = sqlite3.connect(db_path)
+
+        # Your other code here...
         document_helper = DocumentHelper("data/")
         db_writer = DataWriter(conn, do_import)
         processor = RequirementProcessor(db_writer)
@@ -68,12 +83,13 @@ if __name__ == "__main__":
         if do_import:
             for parsed_file in document_helper.list_and_parse_xlsx_files():
                 if parsed_file.error:
-                    print(f"Filename: {parsed_file.filename}, Error: {parsed_file.error}")
+                    print(
+                        f"Filename: {parsed_file.filename}, Error: {parsed_file.error}"
+                    )
                 else:
                     specification = db_writer.get_or_create_specification(parsed_file)
 
                     processor.import_requirements_to_db(specification)
-
 
             custom_comparer = CustomRequirementComparer(conn, db_reader, db_writer, 0.2)
 
@@ -85,7 +101,9 @@ if __name__ == "__main__":
                 for j in range(i + 1, len(specifications)):
                     spec1 = specifications[i]
                     spec2 = specifications[j]
-                    print(f"Comparing {spec1['name']} v{spec1['version']} with {spec2['name']} v{spec2['version']}")
+                    print(
+                        f"Comparing {spec1['name']} v{spec1['version']} with {spec2['name']} v{spec2['version']}"
+                    )
                     custom_comparer.compare_requirements(spec1, spec2)
 
         # Call get_similarity_counts() on db_reader to get the data
@@ -93,10 +111,12 @@ if __name__ == "__main__":
 
         # Now pass this data to the format function
         format_similarity_counts(similarity_data)
-        specifications =db_reader.get_all_specifications()
+        specifications = db_reader.get_all_specifications()
 
         for spec in specifications:
-            print(f"Name: {spec['name']}, Type: {spec['type']}, Category: {spec['category']}")
+            print(
+                f"Name: {spec['name']}, Type: {spec['type']}, Category: {spec['category']}"
+            )
         # cosine_comparer.compare_requirements()
         # jaccard_comparer = JaccardRequirementComparer(processor.conn, False)
         # jaccard_comparer.compare_requirements()
