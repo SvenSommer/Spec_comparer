@@ -114,6 +114,8 @@ class DataWriter:
             """
             CREATE TABLE IF NOT EXISTS requirement_similarities (
                 combined_identifier TEXT PRIMARY KEY,
+                specification1_id INTEGER,
+                specification2_id INTEGER,
                 requirement1_id INTEGER,
                 requirement2_id INTEGER,
                 title_similarity_score REAL,
