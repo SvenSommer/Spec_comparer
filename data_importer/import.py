@@ -57,7 +57,7 @@ def format_similarity_counts(similarity_data):
 
 if __name__ == "__main__":
     try:
-        do_import = False
+        do_import = True
 
         conn = sqlite3.connect("../public/db/requirements.db")
         document_helper = DocumentHelper("data/")

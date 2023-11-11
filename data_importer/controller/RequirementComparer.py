@@ -17,6 +17,9 @@ class RequirementComparer(ABC):
         spec2_requirements = self.data_reader.get_requirements_by_specification(specifkation2)
         for i, spec1_req in enumerate(spec1_requirements):
             for spec2_req in spec2_requirements:
+                if spec1_req["requirement_number"] == spec2_req["requirement_number"]:
+                    continue
+
                 title_similarity = self.calculate_similarity(
                     spec1_req["processed_title"], spec2_req["processed_title"]
                 )
