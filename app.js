@@ -139,8 +139,17 @@ app.get('/api/matrix', (req, res) => {
   });
 
   const specIds = req.query.ids;
+  const threshold = req.query.threshold || '0.75'; // Default threshold value if not provided
+
   if (!specIds || !Array.isArray(specIds) || specIds.length === 0) {
     res.status(400).send('No specification IDs provided');
+    return;
+  }
+
+  // Convert the threshold to a number to avoid SQL injection
+  const thresholdValue = parseFloat(threshold);
+  if (isNaN(thresholdValue) || thresholdValue < 0.20 || thresholdValue > 1) {
+    res.status(400).send('Invalid threshold value');
     return;
   }
 
@@ -166,12 +175,13 @@ app.get('/api/matrix', (req, res) => {
       specifications s2 ON r2.specification_id = s2.id
     WHERE 
       r1.specification_id IN (${placeholders}) AND 
-      r2.specification_id IN (${placeholders})
+      r2.specification_id IN (${placeholders}) AND
+      rs.description_similarity_score >= ?
     GROUP BY 
       r1.specification_id, r2.specification_id
   `;
 
-  db.all(sql, [...specIds, ...specIds], (err, rows) => {
+  db.all(sql, [...specIds, ...specIds, thresholdValue], (err, rows) => {
     if (err) {
       console.error(err.message);
       res.status(500).send('Error executing the query');
@@ -181,8 +191,6 @@ app.get('/api/matrix', (req, res) => {
     db.close();
   });
 });
-// X9Eh0jCqMprgRUQfx6jZhA
-
 
 app.get('/api/specs', (req, res) => {
   let db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {

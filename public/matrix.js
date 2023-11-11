@@ -2,19 +2,44 @@ document.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
   const selectedSpecIds = [...params].filter(([key]) => key.startsWith('ids')).map(([, value]) => value);
 
-  console.log("selectedSpecIds", selectedSpecIds);
-  const query = `/api/matrix?ids=${selectedSpecIds.join('&ids=')}`;
-  console.log(query);
+  fetchMatrixData(selectedSpecIds);
+
+
+  const debouncedFetchMatrixData = debounce(fetchMatrixData, 500);
+
+  document.getElementById('similarityThreshold').addEventListener('input', function (event) {
+    const thresholdValue = event.target.value;
+    document.getElementById('thresholdValue').textContent = thresholdValue;
+    // Verwende die debounced Funktion, um unnötige API-Aufrufe zu vermeiden, während der Schieberegler bewegt wird
+    debouncedFetchMatrixData(selectedSpecIds, thresholdValue);
+  });
+});
+
+function debounce(func, wait) {
+  let timeout;
+  return function (...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+function fetchMatrixData(selectedSpecIds, threshold = 0.75) {
+  // Fügen Sie den Threshold-Wert dem Query-String hinzu
+  const query = `/api/matrix?ids=${selectedSpecIds.join('&ids=')}&threshold=${threshold}`;
 
   fetch(query)
     .then(response => response.ok ? response.json() : Promise.reject(`Network response was not ok ${response.statusText}`))
     .then(data => {
       const specs = new Set(data.flatMap(({ spec1_name, spec1_version, spec2_name, spec2_version }) =>
         [`${spec1_name} V${spec1_version}`, `${spec2_name} V${spec2_version}`]));
-      specs.size === 0 && selectedSpecIds.length > 0 ? fetchSpecDetails(selectedSpecIds) : createMatrixTable([...specs], data);
+      specs.size === 0 && selectedSpecIds.length > 0 ? fetchSpecDetails(selectedSpecIds) : createMatrixTable([...specs], data, threshold);
     })
     .catch(error => console.error('There has been a problem with your fetch operation:', error));
-});
+}
 
 const fetchSpecDetails = (selectedSpecIds) => {
   const specDetailsQuery = `/api/specs?ids=${selectedSpecIds.join('&ids=')}`;
@@ -78,31 +103,59 @@ const createTableBody = (specsArray, createCellContent) => {
   return tbody;
 };
 
+
+
 const createPlaceholderTable = (specsArray) => {
+  const container = document.getElementById('requirements-container');
+  // Entfernen Sie alle Kindelemente vom Container
+  while (container.firstChild) {
+    container.removeChild(container.firstChild);
+    }
   createTableElement(specsArray, (td, spec1, spec2) => {
     td.textContent = spec1 === spec2 ? '-' : '0';
   });
 };
 
-const createMatrixTable = (specs, data) => {
+const createMatrixTable = (specs, data, threshold) => {
+  let table = document.getElementById('similarityMatrixTable');
   const maxSimilarity = Math.max(...data.map(item => item.similarity_count));
-  createTableElement(specs, (td, spec1, spec2) => {
-    const similarity = data.find(({ spec1_name, spec1_version, spec2_name, spec2_version }) =>
-      (`${spec1_name} V${spec1_version}` === spec1 && `${spec2_name} V${spec2_version}` === spec2) ||
-      (`${spec1_name} V${spec1_version}` === spec2 && `${spec2_name} V${spec2_version}` === spec1)
-    );
-    if (similarity) {
-      td.textContent = similarity.similarity_count;
-      const { backgroundColor, textColor } = getColorForSimilarity(similarity.similarity_count, maxSimilarity);
-      td.style.backgroundColor = backgroundColor;
-      td.style.color = textColor;
-      td.title = 'Click to see details';
-      td.style.cursor = 'pointer';
-      td.onclick = () => {
-        window.open(`details.html?spec1_name=${encodeURIComponent(similarity.spec1_name + ' ' + similarity.spec1_version)}&spec2_name=${encodeURIComponent(similarity.spec2_name + ' ' + similarity.spec2_version)}&spec1_id=${encodeURIComponent(similarity.spec1_id)}&spec2_id=${encodeURIComponent(similarity.spec2_id)}`, '_blank');
-      };
-    } else {
-      td.textContent = '-';
+
+  if (!table) {
+    createPlaceholderTable(specs) 
+    table = document.getElementById('similarityMatrixTable');
+  }
+
+  // Aktualisiere die Zellen der bereits existierenden Tabelle.
+  for (let i = 1; i < table.rows.length; i++) {
+    for (let j = 1; j < table.rows[i].cells.length; j++) {
+      const td = table.rows[i].cells[j];
+      const spec1 = table.rows[i].cells[0].textContent;
+      const spec2 = table.rows[0].cells[j].textContent;
+      const similarity = data.find(({ spec1_name, spec1_version, spec2_name, spec2_version }) =>
+        (`${spec1_name} V${spec1_version}` === spec1 && `${spec2_name} V${spec2_version}` === spec2) ||
+        (`${spec1_name} V${spec1_version}` === spec2 && `${spec2_name} V${spec2_version}` === spec1)
+      );
+
+      if (similarity) {
+        td.textContent = similarity.similarity_count;
+        const { backgroundColor, textColor } = getColorForSimilarity(similarity.similarity_count, maxSimilarity);
+        td.style.backgroundColor = backgroundColor;
+        td.style.color = textColor;
+        td.title = 'Click to see details';
+        td.style.cursor = 'pointer';
+        // Ändere das Click-Event, um die URL im aktuellen Fenster zu ändern
+        td.onclick = () => {
+          window.location.href = `details.html?spec1_name=${encodeURIComponent(similarity.spec1_name + ' ' + similarity.spec1_version)}&spec2_name=${encodeURIComponent(similarity.spec2_name + ' ' + similarity.spec2_version)}&spec1_id=${encodeURIComponent(similarity.spec1_id)}&spec2_id=${encodeURIComponent(similarity.spec2_id)}&threshold=${encodeURIComponent(threshold)}`;
+        };
+      } else {
+        td.textContent = '-';
+        td.style.backgroundColor = '';
+        td.style.color = '';
+        td.title = '';
+        td.style.cursor = 'default';
+        td.onclick = null; // Entferne vorhandene Click-Events, falls vorhanden
+      }
     }
-  });
+  }
+
 };

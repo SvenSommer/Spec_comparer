@@ -1,7 +1,90 @@
 document.addEventListener('DOMContentLoaded', function () {
+  // Funktion, um den Threshold aus der URL zu holen
+  const thresholdValue = parseFloat(getURLParameter('threshold')) || 0.5; // Standardwert, falls nicht in URL vorhanden
+
+  const spec1Id = getURLParameter('spec1_id');
+  const spec2Id = getURLParameter('spec2_id');
+  const spec1Name = getURLParameter('spec1_name');
+  const spec2Name = getURLParameter('spec2_name');
+
   function getURLParameter(name) {
     return new URLSearchParams(window.location.search).get(name);
   }
+
+  function createAndFillTable(threshold) {
+    fetch('/api/requirements?spec1Id=' + spec1Id + '&spec2Id=' + spec2Id)
+      .then(response => response.json())
+      .then(data => {
+        const container = document.getElementById('requirements-container');
+        // Leere den Container, bevor du die Tabelle hinzufügst
+        container.innerHTML = '';
+        createAndAppendTable(container, data, spec1Name, spec2Name, threshold);
+
+        // Initialisiere DataTable neu, wenn nötig
+        if ($.fn.dataTable.isDataTable('#similarityMatrixTable')) {
+          $('#similarityMatrixTable').DataTable().destroy();
+        }
+        $('#similarityMatrixTable').DataTable({
+          "scrollX": true,
+          "autoWidth": false
+        });
+
+        new $.fn.dataTable.ColReorder('#similarityMatrixTable');
+      })
+      .catch(error => console.error('Error fetching the requirements:', error));
+  }
+
+  // Initialisiere die Seite mit dem Threshold-Wert aus der URL
+  createAndFillTable(thresholdValue);
+
+  // Funktion, um den Wert des Sliders aus der URL zu setzen
+  function setSliderValueFromURL() {
+    const slider = document.getElementById('similarityThreshold');
+    const sliderValueDisplay = document.getElementById('thresholdValue');
+    slider.value = thresholdValue;
+    sliderValueDisplay.textContent = thresholdValue;
+  }
+
+  setSliderValueFromURL();
+
+  function debounce(func, wait) {
+    let timeout;
+    return function (...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+  }
+
+  // Event-Listener für den Slider, um auf Änderungen zu reagieren, mit Debounce
+  function onSliderChange() {
+    const slider = document.getElementById('similarityThreshold');
+    const debouncedFillTable = debounce(function (event) {
+      const newThresholdValue = event.target.value;
+      const sliderValueDisplay = document.getElementById('thresholdValue');
+      sliderValueDisplay.textContent = newThresholdValue;
+
+      // Aktualisiere die Tabelle mit dem neuen Schwellenwert
+      createAndFillTable(parseFloat(newThresholdValue));
+    }, 500); // Warte 500 ms nach der letzten Änderung des Sliders, bevor die Tabelle aktualisiert wird
+
+    slider.addEventListener('input', debouncedFillTable);
+  }
+
+  onSliderChange();
+});
+
+  function setSliderValueFromURL() {
+    const thresholdValue = getURLParameter('threshold');
+    if (thresholdValue) {
+      const slider = document.getElementById('similarityThreshold');
+      const sliderValueDisplay = document.getElementById('thresholdValue');
+      slider.value = thresholdValue;
+      sliderValueDisplay.textContent = thresholdValue;
+    }
+  }
+
+
 
   function createTableHeaderWithColspan(text, colspan) {
     let th = document.createElement('th');
@@ -20,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return headerRow;
   }
 
-  function createAndAppendTable(container, data, spec1Name, spec2Name) {
+  function createAndAppendTable(container, data, spec1Name, spec2Name, threshold) {
     const table = document.createElement('table');
     table.id = 'requirementsTable';
     table.className = 'table table-striped table-bordered';
@@ -39,14 +122,16 @@ document.addEventListener('DOMContentLoaded', function () {
     ]));
 
     const tbody = table.createTBody();
-    data.forEach(item => createAndPopulateRow(tbody, item));
+    data.forEach(item => createAndPopulateRow(tbody, item, threshold));
 
     container.appendChild(table);
   }
 
-  function createAndPopulateRow(tbody, item) {
-    let row = tbody.insertRow();
-    populateRowWithCells(row, item);
+  function createAndPopulateRow(tbody, item, threshold) {
+    if (parseFloat(item.description_similarity_score) >= threshold) {
+      let row = tbody.insertRow();
+      populateRowWithCells(row, item);
+    }
   }
 
   
@@ -102,23 +187,3 @@ document.addEventListener('DOMContentLoaded', function () {
     cell.style.color = normalizedDifference < 0.5 ? 'white' : 'black';
   }
 
-  const spec1Id = getURLParameter('spec1_id');
-  const spec2Id = getURLParameter('spec2_id');
-  const spec1Name = getURLParameter('spec1_name');
-  const spec2Name = getURLParameter('spec2_name');
-
-  fetch('/api/requirements?spec1Id=' + spec1Id + '&spec2Id=' + spec2Id)
-    .then(response => response.json())
-    .then(data => {
-      const container = document.getElementById('requirements-container');
-      createAndAppendTable(container, data, spec1Name, spec2Name);
-
-      $('#similarityMatrixTable').DataTable({
-        "scrollX": true,
-        "autoWidth": false
-      });
-
-      new $.fn.dataTable.ColReorder('#similarityMatrixTable');
-    })
-    .catch(error => console.error('Error fetching the requirements:', error));
-});

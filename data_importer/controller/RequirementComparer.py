@@ -39,7 +39,6 @@ class RequirementComparer(ABC):
                 logging.info(
                     f"Progress: Compared {i + 1} requirements of {specification1['fullname']} with {specification2['fullname']} by using {self.get_comparison_method()}"
                 )
-        self.data_writer.commit_requirement_similarities()
 
 
     @abstractmethod

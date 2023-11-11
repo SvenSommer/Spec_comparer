@@ -26,46 +26,47 @@ def format_similarity_counts(similarity_data):
 
 if __name__ == "__main__":
     try:
-        do_import = True
+        delete_database = False
         db_directory = "../public/db"
         db_file = "requirements.db"
         db_path = os.path.join(db_directory, db_file)
         if not os.path.exists(db_directory):
             os.makedirs(db_directory)
-        if do_import and os.path.exists(db_path):
+        if delete_database and os.path.exists(db_path):
              os.remove(db_path)
 
         conn = sqlite3.connect(db_path)
         document_helper = DocumentHelper("data/")
-        db_writer = DataWriter(conn, do_import)
+        db_writer = DataWriter(conn, delete_database)
         words_to_replace = ["ePA-Frontend", "ePA Frontend",  "E-Rezept-FdV","TI-ITSM-Teilnehmer", "Hersteller", "Produkttyp"]
         processor = RequirementProcessor(db_writer, words_to_replace)
         db_reader = DataReader(conn)
 
-        if do_import:
-            for parsed_file in document_helper.list_and_parse_xlsx_files():
-                if parsed_file.error:
-                    print(f"Filename: {parsed_file.filename}, Error: {parsed_file.error}")
-                else:
-                    specification = db_writer.get_or_create_specification(parsed_file)
-                    processor.import_requirements_to_db(specification)
 
-            custom_comparer = CustomRequirementComparer(db_reader, db_writer, 0.2)
-            specifications = db_reader.get_all_specifications()
-            for i in range(len(specifications)):
-                spec1 = specifications[i]
-                if spec1['status'] == 'completed':
+        for parsed_file in document_helper.list_and_parse_xlsx_files():
+            if parsed_file.error:
+                print(f"Filename: {parsed_file.filename}, Error: {parsed_file.error}")
+            else:
+                specification = db_writer.get_or_create_specification(parsed_file)
+                processor.import_requirements_to_db(specification)
+
+        custom_comparer = CustomRequirementComparer(db_reader, db_writer, 0.2)
+        specifications = db_reader.get_all_specifications()
+        for i in range(len(specifications)):
+            spec1 = specifications[i]
+            if spec1['status'] == 'completed':
+                continue
+            
+            for j in range(len(specifications)):
+                if i == j or specifications[j]['status'] == 'completed':
                     continue
-                
-                for j in range(len(specifications)):
-                    if i == j or specifications[j]['status'] == 'completed':
-                        continue
 
-                    spec2 = specifications[j]
-                    print(f"Comparing {spec1['name']} v{spec1['version']} with {spec2['name']} v{spec2['version']}")
-                    custom_comparer.compare_requirements(spec1, spec2)
+                spec2 = specifications[j]
+                print(f"Comparing {spec1['name']} v{spec1['version']} with {spec2['name']} v{spec2['version']}")
+                custom_comparer.compare_requirements(spec1, spec2)
                 
-                db_writer.set_specification_status(spec1['id'], 'completed')
+            db_writer.commit_requirement_similarities()
+            db_writer.set_specification_status(spec1['id'], 'completed')
 
 
 
