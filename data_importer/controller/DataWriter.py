@@ -8,8 +8,27 @@ class DataWriter:
         self.conn = conn
         self.cursor = self.conn.cursor()
         self.conn.row_factory = self.dict_factory
+        self.local_cache = {}  
         self.configure_database(overwrite)
-        self.populate_static_data()
+        self.populate_static_data()  
+        self.requirements_to_insert = []
+        self.requirement_similarities_to_insert = []
+
+    def get_or_create_id(self, table_name, entity_name):
+        if (table_name, entity_name) in self.local_cache:
+            return self.local_cache[(table_name, entity_name)]
+
+        self.cursor.execute(f"SELECT id FROM {table_name} WHERE name = ?", (entity_name,))
+        result = self.cursor.fetchone()
+
+        if result:
+            self.local_cache[(table_name, entity_name)] = result[0]
+            return result[0]
+        else:
+            self.cursor.execute(f"INSERT INTO {table_name} (name) VALUES (?)", (entity_name,))
+            self.conn.commit()
+            self.local_cache[(table_name, entity_name)] = self.cursor.lastrowid
+            return self.cursor.lastrowid
 
     def dict_factory(self, cursor, row):
         d = {}
@@ -17,50 +36,38 @@ class DataWriter:
             d[col[0]] = row[idx]
         return d
 
+    def drop_tables(self, tables):
+        for table in tables:
+            self.cursor.execute(f"DROP TABLE IF EXISTS {table}")
+
     def configure_database(self, overwrite):
+        tables = {
+            "specifications": "complex",
+            "requirements": "complex",
+            "requirement_similarities": "complex",
+            "spec_categories": "simple",
+            "spec_types": "simple",
+            "req_sources": "simple",
+            "req_obligations": "simple",
+            "comparison_methods": "simple",
+            "req_test_procedures": "simple"
+        }
+
         if overwrite:
-            self.cursor.execute("DROP TABLE IF EXISTS requirements")
-            self.cursor.execute("DROP TABLE IF EXISTS specifications")
-            self.cursor.execute("DROP TABLE IF EXISTS categories")
-            self.cursor.execute("DROP TABLE IF EXISTS types")
-            self.cursor.execute("DROP TABLE IF EXISTS requirement_similarities")
+            self.drop_tables([table for table in tables])
 
-        self.cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS categories (
-                id INTEGER PRIMARY KEY,
-                name TEXT UNIQUE
-            )
-            """
-        )
+        for table, table_type in tables.items():
+            if table_type == "simple":
+                self.create_standard_table(table)
 
-        self.cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS types (
-                id INTEGER PRIMARY KEY,
-                name TEXT UNIQUE
-            )
-            """
-        )
+        self.create_specifications_table()
+        self.create_requirements_table()
+        self.create_requirement_similarities_table()
+        self.conn.commit()
+        
 
-        self.cursor.execute(
-            """
-            CREATE TABLE IF NOT EXISTS requirements (
-                id INTEGER PRIMARY KEY,
-                specification_id INTEGER,
-                source TEXT,
-                requirement_number TEXT,
-                title TEXT,
-                description TEXT,
-                processed_title TEXT,
-                processed_description TEXT,
-                obligation TEXT,
-                test_procedure TEXT,
-                FOREIGN KEY(specification_id) REFERENCES specifications(id)
-            )
-        """
-        )
 
+    def create_specifications_table(self):
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS specifications (
@@ -72,39 +79,61 @@ class DataWriter:
                 category_id INTEGER,
                 type_id INTEGER,
                 UNIQUE(name, version),
-                FOREIGN KEY(category_id) REFERENCES categories(id),
-                FOREIGN KEY(type_id) REFERENCES types(id)
+                FOREIGN KEY(category_id) REFERENCES spec_categories(id),
+                FOREIGN KEY(type_id) REFERENCES spec_types(id)
             )
-        """
+            """
         )
 
+    def create_requirements_table(self):
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS requirements (
+                id INTEGER PRIMARY KEY,
+                specification_id INTEGER,
+                source_id INTEGER,
+                requirement_number TEXT,
+                title TEXT,
+                description TEXT,
+                processed_title TEXT,
+                processed_description TEXT,
+                obligation_id INTEGER,
+                test_procedure_id INTEGER,
+                FOREIGN KEY(specification_id) REFERENCES specifications(id),
+                FOREIGN KEY(obligation_id) REFERENCES obligations(id),
+                FOREIGN KEY(test_procedure_id) REFERENCES test_procedures(id)
+            )
+            """
+        )
+
+    
+
+    def create_requirement_similarities_table(self):
         self.cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS requirement_similarities (
                 combined_identifier TEXT PRIMARY KEY,
-                spec1_id INTEGER,
-                spec2_id INTEGER,
-                spec1_requirement_number TEXT,
-                spec2_requirement_number TEXT,
-                spec1_title TEXT,
-                spec2_title TEXT,
-                spec1_description TEXT,
-                spec2_description TEXT,
-                spec1_source TEXT,
-                spec2_source TEXT,
-                spec1_obligation TEXT,
-                spec2_obligation TEXT,
-                spec1_test_procedure TEXT,
-                spec2_test_procedure TEXT,
+                requirement1_id INTEGER,
+                requirement2_id INTEGER,
                 title_similarity_score REAL,
                 description_similarity_score REAL,
-                comparison_method TEXT,
-                FOREIGN KEY(spec1_id) REFERENCES specifications(id),
-                FOREIGN KEY(spec2_id) REFERENCES specifications(id)
+                comparison_method_id INTEGER,
+                FOREIGN KEY(requirement1_id) REFERENCES requirements(id),
+                FOREIGN KEY(requirement2_id) REFERENCES requirements(id),
+                FOREIGN KEY(comparison_method_id) REFERENCES comparison_methods(id)
             )
-        """
+            """
         )
-        self.conn.commit()
+
+
+
+    def create_standard_table(self, table_name):
+        self.cursor.execute( f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id INTEGER PRIMARY KEY,
+            name TEXT UNIQUE
+        )
+        """)
 
     def populate_static_data(self):
         static_data = [
@@ -118,39 +147,17 @@ class DataWriter:
             ('Anwendungssteckbrief', 'Steckbriefe'),
             ('Verzeichnis', 'Steckbriefe'),
             ('Unbekannt', 'Unbekannt')
-        ]
+            ]
 
         for type_name, category_name in static_data:
-            self.insert_category(category_name)
-            self.insert_type(type_name)
+            self.get_or_create_id('spec_categories', category_name)
+            self.get_or_create_id('spec_types', type_name)
 
-    def insert_category(self, name):
-        self.cursor.execute(
-            """
-            INSERT INTO categories (name)
-            VALUES (?)
-            ON CONFLICT(name) DO NOTHING
-            """, (name,)
-        )
-        self.conn.commit()
 
-    def insert_type(self, name):
-        self.cursor.execute(
-            """
-            INSERT INTO types (name)
-            VALUES (?)
-            ON CONFLICT(name) DO NOTHING
-            """, (name,)
-        )
-        self.conn.commit()
 
     def get_or_create_specification(self, parsed_file):
-        # Get or create the category_id from the database
-        category_id = self.get_or_create_category_id(parsed_file.category_type)
-        # Get or create the type_id from the database
-        type_id = self.get_or_create_type_id(parsed_file.spec_type)
-
-        # Insert the specification if it does not exist, using the IDs for category and type
+        category_id = self.get_or_create_id('spec_categories', parsed_file.category_type)
+        type_id = self.get_or_create_id('spec_types', parsed_file.spec_type)
         self.cursor.execute(
             """
             INSERT INTO specifications (name, version, fullname, file_path, category_id, type_id)
@@ -167,7 +174,6 @@ class DataWriter:
         )
         self.conn.commit()
 
-        # Retrieve the specification ID
         self.cursor.execute(
             """
             SELECT id FROM specifications
@@ -193,108 +199,80 @@ class DataWriter:
         )
 
         return spec
-    
-    def get_or_create_category_id(self, category_name):
-        # First, try to get the category ID from the database
-        self.cursor.execute("SELECT id FROM categories WHERE name = ?", (category_name,))
-        result = self.cursor.fetchone()
-        if result:
-            return result[0]
-        else:
-            # If the category does not exist, insert it and then return the new ID
-            self.cursor.execute("INSERT INTO categories (name) VALUES (?)", (category_name,))
-            self.conn.commit()
-            return self.cursor.lastrowid
 
-    # This function should be within the DataWriter class
-    def get_or_create_type_id(self, type_name):
-        # First, try to get the type ID from the database
-        self.cursor.execute("SELECT id FROM types WHERE name = ?", (type_name,))
-        result = self.cursor.fetchone()
-        if result:
-            return result[0]
-        else:
-            # If the type does not exist, insert it and then return the new ID
-            self.cursor.execute("INSERT INTO types (name) VALUES (?)", (type_name,))
-            self.conn.commit()
-            return self.cursor.lastrowid
 
     def add_requirement(self, requirement):
-        self.cursor.execute(
-            """
-                    INSERT INTO requirements (
-                        specification_id, source, requirement_number, title, description,
-                        processed_title, processed_description, obligation, test_procedure
-                    )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (
-                requirement.specification_id,
-                requirement.source,
-                requirement.requirement_number,
-                requirement.title,
-                requirement.description,
-                requirement.processed_title,
-                requirement.processed_description,
-                requirement.obligation,
-                requirement.test_procedure,
-            ),
-        )
+        source_id = self.get_or_create_id('req_sources', requirement.source)
+        obligation_id = self.get_or_create_id('req_obligations', requirement.obligation)
+        test_procedure_id = self.get_or_create_id('req_test_procedures', requirement.test_procedure)
 
+        self.requirements_to_insert.append((
+            requirement.specification_id,
+            source_id,
+            requirement.requirement_number,
+            requirement.title,
+            requirement.description,
+            requirement.processed_title,
+            requirement.processed_description,
+            obligation_id,
+            test_procedure_id,
+        ))
 
     def add_requirement_similarities(
         self,
-        spec1: Dict,
-        spec2: Dict,
-        method,
+        requirement1_id: int,
+        requirement2_id: int,
         title_similarity: float,
         description_similarity: float,
+        comparison_method: str,
     ):
-        combined_identifier = f"{spec1['name']}_{spec1['version']}_{spec1['requirement_number']}_{spec1['name']}_{spec1['version']}_{spec2['requirement_number']}"
+        combined_identifier = f"{requirement1_id}_{requirement2_id}"
+        title_similarity_rounded = round(title_similarity, 3)
+        description_similarity_rounded = round(description_similarity, 3)
+        method_id = self.get_or_create_id('comparison_methods', comparison_method)
 
+        self.requirement_similarities_to_insert.append((
+            combined_identifier,
+            requirement1_id,
+            requirement2_id,
+            title_similarity_rounded,  
+            description_similarity_rounded, 
+            method_id,
+        ))
+
+    def commit_requirements(self):
+        self.cursor.executemany(
+            """
+            INSERT INTO requirements (
+                specification_id, source_id, requirement_number, title, description,
+                processed_title, processed_description, obligation_id, test_procedure_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            self.requirements_to_insert
+        )
+        self.requirements_to_insert = []  # Clear the list after inserting
+        self.conn.commit()
+
+    def commit_requirement_similarities(self):
         try:
-            self.cursor.execute(
+            self.cursor.executemany(
                 """
                 INSERT INTO requirement_similarities (
-                    combined_identifier, 
-                    spec1_id, 
-                    spec2_id,
-                    spec1_requirement_number, spec2_requirement_number,
-                    spec1_title, spec2_title, 
-                    spec1_description, spec2_description, 
-                    spec1_source, spec2_source, 
-                    spec1_obligation, spec2_obligation, 
-                    spec1_test_procedure, spec2_test_procedure,
-                    title_similarity_score, description_similarity_score, 
-                    comparison_method
-                )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
                     combined_identifier,
-                    spec1["specification_id"],  
-                    spec2["specification_id"],
-                    spec1["requirement_number"],
-                    spec2["requirement_number"],
-                    spec1["title"],
-                    spec2["title"],
-                    spec1["description"],
-                    spec2["description"],
-                    spec1.get("source", "unknown"),
-                    spec2.get("source", "unknown"),
-                    spec1.get("obligation", "unknown"),
-                    spec2.get("obligation", "unknown"),
-                    spec1.get("test_procedure", "unknown"),
-                    spec2.get("test_procedure", "unknown"),
-                    title_similarity,
-                    description_similarity,
-                    method,
-                ),
+                    requirement1_id,
+                    requirement2_id,
+                    title_similarity_score,
+                    description_similarity_score,
+                    comparison_method_id
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                self.requirement_similarities_to_insert
             )
         except sqlite3.IntegrityError as e:
-            print(
-                f"Entry with combined_identifier {combined_identifier} already exists. Error: {e}"
-            )
+            print(f"An error occurred: {e}")
+        self.requirement_similarities_to_insert = []  # Clear the list after inserting
         self.conn.commit()
 
     def close_connection(self):
@@ -302,3 +280,4 @@ class DataWriter:
         Close the database connection.
         """
         self.conn.close()
+

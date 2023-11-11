@@ -10,45 +10,53 @@ from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 
 from Requirement import Requirement
-class RequirementProcessor:
-    def __init__(self, data_writer):
-        self.data_writer = data_writer
-        self.nlp = spacy.load('de_core_news_md')
-        nltk.download('stopwords')
-        nltk.download('wordnet')
 
-    @staticmethod
-    def preprocess_text(text):
+
+class RequirementProcessor:
+    def __init__(self, data_writer, words_to_replace):
+        self.data_writer = data_writer
+        self.nlp = spacy.load("de_core_news_md")
+        nltk.download("stopwords")
+        nltk.download("wordnet")
+        self.words_to_replace = words_to_replace
+
+    def preprocess_text(self, text):
         if text is None or text.strip() == "":
             return None
-        text = text.replace("ePA-Frontend", "").replace("E-Rezept-FdV", "")
+
+        # Replace each word in the array with an empty string
+        for word_to_replace in self.words_to_replace:
+            text = text.replace(word_to_replace, "")
+
+        # Continue with the preprocessing steps
         text = text.lower()
-        text = text.translate(str.maketrans('', '', string.punctuation))
-        text = re.sub(r'\d+', '', text)
+        text = text.translate(str.maketrans("", "", string.punctuation))
+        text = re.sub(r"\d+", "", text)
         text = text.strip()
-        stop_words = set(stopwords.words('german'))
+
+        # Tokenization and stopword removal
+        stop_words = set(stopwords.words("german"))
         words = text.split()
         words = [word for word in words if word not in stop_words]
-        stemmer = SnowballStemmer('german')
-        words = [stemmer.stem(word) for word in words]
-        return ' '.join(words)
 
+        # Stemming
+        stemmer = SnowballStemmer("german")
+        words = [stemmer.stem(word) for word in words]
+
+        return " ".join(words)
 
     def import_requirements_to_db(self, specification):
-        # Load the Excel file
         print(f"Importing {specification.name}")
         workbook = openpyxl.load_workbook(specification.file_path)
         sheet = workbook["Festlegungen"]
 
         total_entries = 0
         for row in sheet.iter_rows(min_row=2):  # Skip the header row
-            # Map cells to database columns
             requirement_number = row[0].value
             title = row[1].value
             description = row[2].value
             obligation = row[4].value  # Skip 'Beschreibung (HTML)'
 
-            # Default values for source and test_procedure
             source = specification.name
             test_procedure = "unknown"
 
@@ -58,15 +66,15 @@ class RequirementProcessor:
             if len(row) > 6:
                 test_procedure = row[6].value
 
-            # Prepare title and description
             processed_title = self.preprocess_text(title)
             processed_description = self.preprocess_text(description)
 
             if processed_title is None or processed_description is None:
-                logging.error(f"Row {total_entries+2} in {specification.fullname} has empty title or description and will be skipped.")
+                logging.error(
+                    f"Row {total_entries+2} in {specification.fullname} has empty title or description and will be skipped."
+                )
                 continue
 
-            # Create a Requirement instance
             requirement = Requirement(
                 specification_id=specification.id,  # This should be the primary key ID from the specifications table
                 source=source,
@@ -76,18 +84,17 @@ class RequirementProcessor:
                 processed_title=processed_title,
                 processed_description=processed_description,
                 obligation=obligation,
-                test_procedure=test_procedure
+                test_procedure=test_procedure,
             )
 
             try:
-                # Use Requirement Data Object
                 self.data_writer.add_requirement(requirement)
                 total_entries += 1
             except sqlite3.Error as e:
                 logging.error(f"Error inserting data into database: {e}")
                 continue
+        self.data_writer.commit_requirements()
 
-        logging.info(f"Total number of entries added from {specification.name}: {total_entries}")
-
-    def close(self):
-        self.conn.close()
+        logging.info(
+            f"Total number of entries added from {specification.name}: {total_entries}"
+        )

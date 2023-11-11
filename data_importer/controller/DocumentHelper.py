@@ -10,9 +10,21 @@ class DocumentHelper:
         self.spec_type = SpecificationType()
 
     def parse_filename(self, filename):
-        match = re.match(r"^(gem.*?)_V(.*?)\.xlsx$", filename)
+        # Versuch mit der ersten Regex
+        match = re.match(r"^(.*)_(V([^_]+))\.xlsx$", filename)
+
+        # Wenn keine Übereinstimmung, versuche die zweite Regex
+        if not match:
+            match = re.match(r"^(.*)_(V.+?)\.xlsx$", filename)
+            if match:
+                spec_name, version_with_v = match.groups()
+                version = version_with_v[1:].strip()  # Entferne das "V" von der Version und schneide Leerzeichen ab
+        else:
+            spec_name, _, version = match.groups()  # Das dritte Element ist die Version ohne das "V"
+            version = version.strip()  # Schneide mögliche Leerzeichen ab
+
+        # Wenn eine Übereinstimmung gefunden wurde
         if match:
-            spec_name, version = match.groups()
             subtype, cattype = self.spec_type.get_spec_type(spec_name)
             return spec_name, version, subtype, cattype
         else:

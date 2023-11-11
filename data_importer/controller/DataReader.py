@@ -69,8 +69,8 @@ class DataReader:
             SELECT s.*, t.name AS type, c.name AS category, t.id AS type_id, c.id AS category_id, COUNT(r.specification_id) as requirement_count
             FROM specifications s
             LEFT JOIN requirements r ON s.id = r.specification_id
-            LEFT JOIN types t ON s.type_id = t.id
-            LEFT JOIN categories c ON s.category_id = c.id
+            LEFT JOIN spec_types t ON s.type_id = t.id
+            LEFT JOIN spec_categories c ON s.category_id = c.id
             GROUP BY s.id
             '''
         )
@@ -83,22 +83,27 @@ class DataReader:
         """
         self.cursor.execute(
             '''
-            SELECT 
-                rs.spec1_id, 
-                rs.spec2_id, 
-                s1.name as spec1_name, 
-                s1.version as spec1_version, 
-                s2.name as spec2_name, 
-                s2.version as spec2_version, 
-                COUNT(*) as similarity_count
+           SELECT 
+                r1.specification_id AS spec1_id, 
+                r2.specification_id AS spec2_id, 
+                s1.name AS spec1_name, 
+                s1.version AS spec1_version, 
+                s2.name AS spec2_name, 
+                s2.version AS spec2_version, 
+                COUNT(*) AS similarity_count
             FROM 
                 requirement_similarities rs
             JOIN 
-                specifications s1 ON rs.spec1_id = s1.id
+                requirements r1 ON rs.requirement1_id = r1.id
             JOIN 
-                specifications s2 ON rs.spec2_id = s2.id
+                requirements r2 ON rs.requirement2_id = r2.id
+            JOIN 
+                specifications s1 ON r1.specification_id = s1.id
+            JOIN 
+                specifications s2 ON r2.specification_id = s2.id
             GROUP BY 
-                rs.spec1_id, rs.spec2_id
+                r1.specification_id, r2.specification_id;
+
             '''
         )
         return self.cursor.fetchall()

@@ -34,9 +34,9 @@ app.get('/api/specifications', (req, res) => {
         LEFT JOIN 
           requirements r ON s.id = r.specification_id
         LEFT JOIN 
-          types t ON s.type_id = t.id
+          spec_types t ON s.type_id = t.id
         LEFT JOIN 
-          categories c ON s.category_id = c.id
+          spec_categories c ON s.category_id = c.id
         GROUP BY 
           s.name`;
 
@@ -71,13 +71,49 @@ app.get('/api/requirements', (req, res) => {
     if (err) {
       console.error(err.message);
       res.status(500).send('Error connecting to the database');
-      return; 
+      return;
     }
   });
 
   const sql = `
-    SELECT * FROM requirement_similarities 
-    WHERE spec1_id = ? AND spec2_id = ?
+        SELECT 
+        r1.requirement_number as req1_requirement_number,
+        source1.name AS req1_source, 
+        r1.title AS spec1_title, 
+        r1.description AS spec1_description, 
+        obligation1.name AS spec1_obligation, 
+        test1.name AS spec1_test_procedure,
+        r2.requirement_number as req2_requirement_number,
+        r2.title AS spec2_title, 
+        r2.description AS spec2_description, 
+        source2.name AS req2_source, 
+        obligation2.name AS spec2_obligation, 
+        test2.name AS spec2_test_procedure,
+        rs.comparison_method_id as comparison_method,
+        rs.title_similarity_score,
+        rs.description_similarity_score,
+        rs.combined_identifier
+      FROM 
+        requirement_similarities rs
+      JOIN 
+        requirements r1 ON rs.requirement1_id = r1.id
+      JOIN 
+        requirements r2 ON rs.requirement2_id = r2.id
+      JOIN 
+        req_sources source1 ON r1.source_id = source1.id
+      JOIN 
+        req_sources source2 ON r2.source_id = source2.id
+      JOIN 
+        req_obligations obligation1 ON r1.obligation_id = obligation1.id
+      JOIN 
+        req_obligations obligation2 ON r2.obligation_id = obligation2.id
+      JOIN 
+        req_test_procedures test1 ON r1.test_procedure_id = test1.id
+      JOIN 
+        req_test_procedures test2 ON r2.test_procedure_id = test2.id
+      WHERE 
+        r1.specification_id = ? AND 
+        r2.specification_id = ?
   `;
 
   db.all(sql, [spec1Id, spec2Id], (err, rows) => {
@@ -101,37 +137,39 @@ app.get('/api/matrix', (req, res) => {
     }
   });
 
-  // Hier nehmen wir an, dass die IDs als Abfrageparameter in der Form "ids=1&ids=2&..." übergeben werden.
   const specIds = req.query.ids;
   if (!specIds || !Array.isArray(specIds) || specIds.length === 0) {
     res.status(400).send('No specification IDs provided');
     return;
   }
 
-  // Erstellen Sie die SQL-Abfrage, um die Daten basierend auf den übergebenen IDs zu filtern.
   const placeholders = specIds.map(() => '?').join(',');
   const sql = `
     SELECT 
-      rs.spec1_id, 
-      s1.name as spec1_name, 
-      s1.version as spec1_version, 
-      rs.spec2_id, 
-      s2.name as spec2_name, 
-      s2.version as spec2_version, 
-      COUNT(*) as similarity_count
+      r1.specification_id AS spec1_id, 
+      s1.name AS spec1_name, 
+      s1.version AS spec1_version, 
+      r2.specification_id AS spec2_id, 
+      s2.name AS spec2_name, 
+      s2.version AS spec2_version, 
+      COUNT(*) AS similarity_count
     FROM 
       requirement_similarities rs
     JOIN 
-      specifications s1 ON rs.spec1_id = s1.id
+      requirements r1 ON rs.requirement1_id = r1.id
     JOIN 
-      specifications s2 ON rs.spec2_id = s2.id
+      requirements r2 ON rs.requirement2_id = r2.id
+    JOIN 
+      specifications s1 ON r1.specification_id = s1.id
+    JOIN 
+      specifications s2 ON r2.specification_id = s2.id
     WHERE 
-      rs.spec1_id IN (${placeholders}) AND rs.spec2_id IN (${placeholders})
+      r1.specification_id IN (${placeholders}) AND 
+      r2.specification_id IN (${placeholders})
     GROUP BY 
-      rs.spec1_id, rs.spec2_id
+      r1.specification_id, r2.specification_id
   `;
 
-  // Führe die SQL-Abfrage mit den IDs als Parameter aus.
   db.all(sql, [...specIds, ...specIds], (err, rows) => {
     if (err) {
       console.error(err.message);
@@ -142,6 +180,7 @@ app.get('/api/matrix', (req, res) => {
     db.close();
   });
 });
+// X9Eh0jCqMprgRUQfx6jZhA
 
 
 app.get('/api/specs', (req, res) => {

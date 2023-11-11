@@ -28,14 +28,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const thead = table.createTHead();
     const specHeaderRow = thead.insertRow();
 
-    [spec1Name, spec2Name, 'Vergleichsalgorithmus', 'Titel Similarity Score', 'Beschreibung Similarity Score', 'Identification Number'].forEach((name, index) => {
+    [spec1Name, spec2Name, 'Vergleichsalgorithmus', 'Titel Similarity Score', 'Beschreibung Similarity Score'].forEach((name, index) => {
       specHeaderRow.appendChild(createTableHeaderWithColspan(name, index < 2 ? 6 : 1));
     });
 
     thead.appendChild(createTableHeaderRow([
       'ID', 'Quelle', 'Titel', 'Beschreibung', 'Verbindlichkeit', 'Prüfverfahren',
       'ID', 'Quelle', 'Title', 'Beschreibung', 'Verbindlichkeit', 'Prüfverfahren',
-      '', '', '', ''
+      '', '', '' //, ''
     ]));
 
     const tbody = table.createTBody();
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function populateRowWithCells(row, item) {
     function addCell(row, text, score) {
       let cell = row.insertCell();
-      cell.textContent = score !== undefined ? parseFloat(score).toFixed(2) : text;
+      cell.textContent = text;
       if (score !== undefined) {
         colorizeCellBackground(cell, score);
       }
@@ -66,32 +66,26 @@ document.addEventListener('DOMContentLoaded', function () {
       colorizeComparisonCells(cell, spec1Value, spec2Value);
     }
   
-    addCell(row, item.spec1_requirement_number);
-    addCell(row, item.spec1_source);
-    addCell(row, item.spec1_title);
-    addCell(row, item.spec1_description);
-    addCell(row, item.title_similarity_score, item.title_similarity_score);
-    addCell(row, item.description_similarity_score, item.description_similarity_score);
-  
+    addCell(row, item.req1_requirement_number);
+    addCell(row, item.req1_source);
+    addCell(row, item.spec1_title, item.title_similarity_score);
+    addCell(row, item.spec1_description, item.description_similarity_score);
     addComparisonCell(row, item.spec1_obligation, item.spec2_obligation);
     addComparisonCell(row, item.spec1_test_procedure, item.spec2_test_procedure);
   
-    addCell(row, item.spec2_requirement_number);
-    addCell(row, item.spec2_source);
-    addCell(row, item.spec2_title);
-    addCell(row, item.spec2_description);
-    addCell(row, item.title_similarity_score, item.title_similarity_score);
-    addCell(row, item.description_similarity_score, item.description_similarity_score);
+    addCell(row, item.req2_requirement_number);
+    addCell(row, item.req2_source);
+    addCell(row, item.spec2_title, item.title_similarity_score);
+    addCell(row, item.spec2_description, item.description_similarity_score);
   
     addComparisonCell(row, item.spec2_obligation, item.spec1_obligation);
     addComparisonCell(row, item.spec2_test_procedure, item.spec1_test_procedure);
   
     addCell(row, item.comparison_method);
-    addCell(row, item.title_similarity_score, item.title_similarity_score);
-    addCell(row, item.description_similarity_score, item.description_similarity_score);
-    addCell(row, item.combined_identifier);
+    addCell(row, parseFloat(item.title_similarity_score).toFixed(2), item.title_similarity_score);
+    addCell(row, parseFloat(item.description_similarity_score).toFixed(2), item.description_similarity_score);
+ // addCell(row, item.combined_identifier);
   }
-  
 
   function colorizeCellBackground(cell, score) {
     const normalizedScore = parseFloat(score);

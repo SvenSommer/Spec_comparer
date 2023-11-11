@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log("selectedSpecIds", selectedSpecIds);
   const query = `/api/matrix?ids=${selectedSpecIds.join('&ids=')}`;
-  console.log(query);
 
   fetch(query)
     .then(response => response.ok ? response.json() : Promise.reject(`Network response was not ok ${response.statusText}`))
