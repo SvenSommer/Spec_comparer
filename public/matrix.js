@@ -4,7 +4,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   fetchMatrixData(selectedSpecIds);
 
-
   const debouncedFetchMatrixData = debounce(fetchMatrixData, 500);
 
   document.getElementById('similarityThreshold').addEventListener('input', function (event) {
@@ -36,7 +35,7 @@ function fetchMatrixData(selectedSpecIds, threshold = 0.75) {
     .then(data => {
       const specs = new Set(data.flatMap(({ spec1_name, spec1_version, spec2_name, spec2_version }) =>
         [`${spec1_name} V${spec1_version}`, `${spec2_name} V${spec2_version}`]));
-      specs.size === 0 && selectedSpecIds.length > 0 ? fetchSpecDetails(selectedSpecIds) : createMatrixTable([...specs], data, threshold);
+     createMatrixTable([...specs], data, threshold);
     })
     .catch(error => console.error('There has been a problem with your fetch operation:', error));
 }
@@ -63,7 +62,7 @@ const getColorForSimilarity = (similarity, maxSimilarity) => {
 
 const createTableElement = (specsArray, createCellContent) => {
   const table = document.createElement('table');
-  table.id = 'similarityMatrixTable';
+  table.id = 'gTable';
   table.className = 'table table-striped table-bordered';
 
   table.appendChild(createTableHead(specsArray));
@@ -117,12 +116,12 @@ const createPlaceholderTable = (specsArray) => {
 };
 
 const createMatrixTable = (specs, data, threshold) => {
-  let table = document.getElementById('similarityMatrixTable');
+  let table = document.getElementById('gTable');
   const maxSimilarity = Math.max(...data.map(item => item.similarity_count));
 
   if (!table) {
     createPlaceholderTable(specs) 
-    table = document.getElementById('similarityMatrixTable');
+    table = document.getElementById('gTable');
   }
 
   // Aktualisiere die Zellen der bereits existierenden Tabelle.

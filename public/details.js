@@ -16,20 +16,18 @@ document.addEventListener('DOMContentLoaded', function () {
       .then(response => response.json())
       .then(data => {
         const container = document.getElementById('requirements-container');
-        // Leere den Container, bevor du die Tabelle hinzufügst
         container.innerHTML = '';
         createAndAppendTable(container, data, spec1Name, spec2Name, threshold);
 
-        // Initialisiere DataTable neu, wenn nötig
-        if ($.fn.dataTable.isDataTable('#similarityMatrixTable')) {
-          $('#similarityMatrixTable').DataTable().destroy();
+        if ($.fn.dataTable.isDataTable('#gTable')) {
+          $('#gTable').DataTable().destroy();
         }
-        $('#similarityMatrixTable').DataTable({
+        $('#gTable').DataTable({
           "scrollX": true,
           "autoWidth": false
         });
 
-        new $.fn.dataTable.ColReorder('#similarityMatrixTable');
+        new $.fn.dataTable.ColReorder('#gTable');
       })
       .catch(error => console.error('Error fetching the requirements:', error));
   }
@@ -84,8 +82,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-
-
   function createTableHeaderWithColspan(text, colspan) {
     let th = document.createElement('th');
     th.textContent = text;
@@ -105,20 +101,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function createAndAppendTable(container, data, spec1Name, spec2Name, threshold) {
     const table = document.createElement('table');
-    table.id = 'requirementsTable';
+    table.id = 'gTable';
     table.className = 'table table-striped table-bordered';
 
     const thead = table.createTHead();
     const specHeaderRow = thead.insertRow();
 
-    [spec1Name, spec2Name, 'Vergleichsalgorithmus', 'Titel Similarity Score', 'Beschreibung Similarity Score'].forEach((name, index) => {
+    [spec1Name, spec2Name, 'Titel Similarity Score', 'Beschreibung Similarity Score'].forEach((name, index) => {
       specHeaderRow.appendChild(createTableHeaderWithColspan(name, index < 2 ? 6 : 1));
     });
 
     thead.appendChild(createTableHeaderRow([
       'ID', 'Quelle', 'Titel', 'Beschreibung', 'Verbindlichkeit', 'Prüfverfahren',
       'ID', 'Quelle', 'Title', 'Beschreibung', 'Verbindlichkeit', 'Prüfverfahren',
-      '', '', '' //, ''
+      '', ''
     ]));
 
     const tbody = table.createTBody();
@@ -133,8 +129,6 @@ document.addEventListener('DOMContentLoaded', function () {
       populateRowWithCells(row, item);
     }
   }
-
-  
 
   function populateRowWithCells(row, item) {
     function addCell(row, text, score) {
@@ -166,7 +160,6 @@ document.addEventListener('DOMContentLoaded', function () {
     addComparisonCell(row, item.spec2_obligation, item.spec1_obligation);
     addComparisonCell(row, item.spec2_test_procedure, item.spec1_test_procedure);
   
-    addCell(row, item.comparison_method);
     addCell(row, parseFloat(item.title_similarity_score).toFixed(2), item.title_similarity_score);
     addCell(row, parseFloat(item.description_similarity_score).toFixed(2), item.description_similarity_score);
  // addCell(row, item.combined_identifier);

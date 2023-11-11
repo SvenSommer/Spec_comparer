@@ -26,7 +26,7 @@ def format_similarity_counts(similarity_data):
 
 if __name__ == "__main__":
     try:
-        delete_database = False
+        delete_database = True
         db_directory = "../public/db"
         db_file = "requirements.db"
         db_path = os.path.join(db_directory, db_file)
@@ -67,8 +67,6 @@ if __name__ == "__main__":
                 
             db_writer.commit_requirement_similarities()
             db_writer.set_specification_status(spec1['id'], 'completed')
-
-
 
         similarity_data = db_reader.get_similarity_counts()
         format_similarity_counts(similarity_data)

@@ -1,7 +1,6 @@
 import logging
-
 from abc import ABC, abstractmethod
-from typing import Dict, List
+
 
 
 class RequirementComparer(ABC):
@@ -27,8 +26,10 @@ class RequirementComparer(ABC):
                     spec2_req["processed_description"],
                 )
 
-                if self.is_above_threshold(title_similarity, description_similarity, self.threshold):
+                if self.is_above_threshold(description_similarity, self.threshold):
                     self.data_writer.add_requirement_similarities(
+                        specification1["id"],
+                        specification2["id"],
                         spec1_req["id"],
                         spec2_req["id"],
                         title_similarity,
@@ -37,8 +38,29 @@ class RequirementComparer(ABC):
                     )
             if (i + 1) % 100 == 0:
                 logging.info(
-                    f"Progress: Compared {i + 1} requirements of {specification1['fullname']} with {specification2['fullname']} by using {self.get_comparison_method()}"
+                    f"Progress: Compared {i + 1} requirements of {specification1['name']} V{specification1['version']} with {specification2['name']} V{specification2['version']} by using {self.get_comparison_method()}"
                 )
+
+
+    def find_similar_requirements(self, processed_input_text):
+        all_requirements = self.data_reader.get_all_requirements()
+        
+        similar_requirements = []
+        
+        for req in all_requirements:
+            description_similarity = self.calculate_similarity(processed_input_text, req["processed_description"])
+
+            if self.is_above_threshold(description_similarity, self.threshold):
+                # Füge Similarität und Threshold dem Requirement-Datenobjekt hinzu
+                req_with_similarity = req.copy()  # Erstelle eine Kopie des Requirement-Objekts, falls nötig
+                req_with_similarity["similarity"] = description_similarity
+                req_with_similarity["threshold"] = self.threshold
+                similar_requirements.append(req_with_similarity)
+
+        return similar_requirements
+
+    def is_above_threshold(self, description_similarity: float, treshold: float) -> bool:
+        return description_similarity > treshold
 
 
     @abstractmethod
@@ -49,8 +71,3 @@ class RequirementComparer(ABC):
     def get_comparison_method(self) -> str:
         pass
 
-    @abstractmethod
-    def is_above_threshold(
-        self, title_similarity: float, description_similarity: float, treshold: float
-    ) -> bool:
-        pass

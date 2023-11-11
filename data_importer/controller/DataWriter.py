@@ -1,4 +1,3 @@
-from typing import Dict, List
 import sqlite3
 from Specification import Specification
 
@@ -221,28 +220,6 @@ class DataWriter:
             test_procedure_id,
         ))
 
-    def add_requirement_similarities(
-        self,
-        requirement1_id: int,
-        requirement2_id: int,
-        title_similarity: float,
-        description_similarity: float,
-        comparison_method: str,
-    ):
-        combined_identifier = f"{requirement1_id}_{requirement2_id}"
-        title_similarity_rounded = round(title_similarity, 3)
-        description_similarity_rounded = round(description_similarity, 3)
-        method_id = self.get_or_create_id('comparison_methods', comparison_method)
-
-        self.requirement_similarities_to_insert.append((
-            combined_identifier,
-            requirement1_id,
-            requirement2_id,
-            title_similarity_rounded,  
-            description_similarity_rounded, 
-            method_id,
-        ))
-
     def commit_requirements(self):
         self.cursor.executemany(
             """
@@ -257,19 +234,47 @@ class DataWriter:
         self.requirements_to_insert = []  # Clear the list after inserting
         self.conn.commit()
 
+    def add_requirement_similarities(
+        self,
+        spec1_id: int,
+        spec2_id: int,
+        requirement1_id: int,
+        requirement2_id: int,
+        title_similarity: float,
+        description_similarity: float,
+        comparison_method: str,
+    ):
+        combined_identifier = f"{requirement1_id}_{requirement2_id}"
+        title_similarity_rounded = round(title_similarity, 3)
+        description_similarity_rounded = round(description_similarity, 3)
+        method_id = self.get_or_create_id('comparison_methods', comparison_method)
+
+        self.requirement_similarities_to_insert.append((
+            combined_identifier,
+            spec1_id,
+            spec2_id,
+            requirement1_id,
+            requirement2_id,
+            title_similarity_rounded,  
+            description_similarity_rounded, 
+            method_id,
+        ))
+
     def commit_requirement_similarities(self):
         try:
             self.cursor.executemany(
                 """
                 INSERT INTO requirement_similarities (
                     combined_identifier,
+                    specification1_id,
+                    specification2_id,
                     requirement1_id,
                     requirement2_id,
                     title_similarity_score,
                     description_similarity_score,
                     comparison_method_id
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 self.requirement_similarities_to_insert
             )
