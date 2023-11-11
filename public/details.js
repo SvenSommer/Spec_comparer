@@ -1,170 +1,130 @@
 document.addEventListener('DOMContentLoaded', function () {
-  const params = new URLSearchParams(window.location.search);
-  const spec1Id = params.get('spec1_id');
-  const spec2Id = params.get('spec2_id');
-  const spec1Name = params.get('spec1_name');
-  const spec2Name = params.get('spec2_name');
+  function getURLParameter(name) {
+    return new URLSearchParams(window.location.search).get(name);
+  }
 
-  console.log("spec1Id", spec1Id)
-  console.log("spec2Id", spec2Id)
+  function createTableHeaderWithColspan(text, colspan) {
+    let th = document.createElement('th');
+    th.textContent = text;
+    th.setAttribute('colspan', colspan.toString());
+    return th;
+  }
+
+  function createTableHeaderRow(headers) {
+    let headerRow = document.createElement('tr');
+    headers.forEach(text => {
+      let th = document.createElement('th');
+      th.textContent = text;
+      headerRow.appendChild(th);
+    });
+    return headerRow;
+  }
+
+  function createAndAppendTable(container, data, spec1Name, spec2Name) {
+    const table = document.createElement('table');
+    table.id = 'requirementsTable';
+    table.className = 'table table-striped table-bordered';
+
+    const thead = table.createTHead();
+    const specHeaderRow = thead.insertRow();
+
+    [spec1Name, spec2Name, 'Vergleichsalgorithmus', 'Titel Similarity Score', 'Beschreibung Similarity Score', 'Identification Number'].forEach((name, index) => {
+      specHeaderRow.appendChild(createTableHeaderWithColspan(name, index < 2 ? 6 : 1));
+    });
+
+    thead.appendChild(createTableHeaderRow([
+      'ID', 'Quelle', 'Titel', 'Beschreibung', 'Verbindlichkeit', 'Prüfverfahren',
+      'ID', 'Quelle', 'Title', 'Beschreibung', 'Verbindlichkeit', 'Prüfverfahren',
+      '', '', '', ''
+    ]));
+
+    const tbody = table.createTBody();
+    data.forEach(item => createAndPopulateRow(tbody, item));
+
+    container.appendChild(table);
+  }
+
+  function createAndPopulateRow(tbody, item) {
+    let row = tbody.insertRow();
+    populateRowWithCells(row, item);
+  }
+
+  
+
+  function populateRowWithCells(row, item) {
+    function addCell(row, text, score) {
+      let cell = row.insertCell();
+      cell.textContent = score !== undefined ? parseFloat(score).toFixed(2) : text;
+      if (score !== undefined) {
+        colorizeCellBackground(cell, score);
+      }
+    }
+  
+    function addComparisonCell(row, spec1Value, spec2Value) {
+      let cell = row.insertCell();
+      cell.textContent = spec1Value;
+      colorizeComparisonCells(cell, spec1Value, spec2Value);
+    }
+  
+    addCell(row, item.spec1_requirement_number);
+    addCell(row, item.spec1_source);
+    addCell(row, item.spec1_title);
+    addCell(row, item.spec1_description);
+    addCell(row, item.title_similarity_score, item.title_similarity_score);
+    addCell(row, item.description_similarity_score, item.description_similarity_score);
+  
+    addComparisonCell(row, item.spec1_obligation, item.spec2_obligation);
+    addComparisonCell(row, item.spec1_test_procedure, item.spec2_test_procedure);
+  
+    addCell(row, item.spec2_requirement_number);
+    addCell(row, item.spec2_source);
+    addCell(row, item.spec2_title);
+    addCell(row, item.spec2_description);
+    addCell(row, item.title_similarity_score, item.title_similarity_score);
+    addCell(row, item.description_similarity_score, item.description_similarity_score);
+  
+    addComparisonCell(row, item.spec2_obligation, item.spec1_obligation);
+    addComparisonCell(row, item.spec2_test_procedure, item.spec1_test_procedure);
+  
+    addCell(row, item.comparison_method);
+    addCell(row, item.title_similarity_score, item.title_similarity_score);
+    addCell(row, item.description_similarity_score, item.description_similarity_score);
+    addCell(row, item.combined_identifier);
+  }
+  
+
+  function colorizeCellBackground(cell, score) {
+    const normalizedScore = parseFloat(score);
+    const hexRatio = Math.round(normalizedScore * 255).toString(16).padStart(2, '0');
+    cell.style.backgroundColor = `#000e52${hexRatio}`;
+    cell.style.color = normalizedScore > 0.5 ? 'white' : 'black';
+  }
+
+  function colorizeComparisonCells(cell, value1, value2, maxPossibleDifference = 1) {
+    const difference = Math.abs(value1 - value2);
+    const normalizedDifference = value1 === value2 ? 0 : difference / maxPossibleDifference;
+    const hexRatio = Math.round((1 - normalizedDifference) * 255).toString(16).padStart(2, '0');
+    cell.style.backgroundColor = `#000e52${hexRatio}`;
+    cell.style.color = normalizedDifference < 0.5 ? 'white' : 'black';
+  }
+
+  const spec1Id = getURLParameter('spec1_id');
+  const spec2Id = getURLParameter('spec2_id');
+  const spec1Name = getURLParameter('spec1_name');
+  const spec2Name = getURLParameter('spec2_name');
 
   fetch('/api/requirements?spec1Id=' + spec1Id + '&spec2Id=' + spec2Id)
     .then(response => response.json())
     .then(data => {
       const container = document.getElementById('requirements-container');
-      const table = document.createElement('table');
-      table.id = 'requirementsTable';
-      table.className = 'table table-striped table-bordered';
+      createAndAppendTable(container, data, spec1Name, spec2Name);
 
-
-      // Create the table header
-      const thead = table.createTHead();
-      const headerRow = thead.insertRow();
-      const headers = [
-        `${spec1Name} Requirement Number`,
-        `${spec1Name} Source`,
-        `${spec1Name} Title`,
-        `${spec1Name} Description`,
-        `${spec1Name} Obligation`,
-        `${spec1Name} Test Procedure`,
-        `${spec2Name} Requirement Number`,
-        `${spec2Name} Source`,
-        `${spec2Name} Title`,
-        `${spec2Name} Description`,
-        `${spec2Name} Obligation`,
-        `${spec2Name} Test Procedure`,
-        'Comparison Method',
-        'Title Similarity Score',
-        'Description Similarity Score',
-        'Combined Number',
-      ];
-      headers.forEach(text => {
-        let th = document.createElement('th');
-        th.textContent = text;
-        headerRow.appendChild(th);
+      $('#similarityMatrixTable').DataTable({
+        "scrollX": true,
+        "autoWidth": false
       });
 
-      // Create the table body
-      const tbody = table.createTBody();
-      data.forEach(item => {
-        let row = tbody.insertRow();
-        let cell;
-      
-        // ePA Requirement Number
-        cell = row.insertCell();
-        cell.textContent = item.spec1_requirement_number;
-      
-        // ePA Source
-        cell = row.insertCell();
-        cell.textContent = item.spec1_source;
-        
-        // ePA Title
-        cell = row.insertCell();
-        cell.textContent = item.spec1_title;
-        colorizeCellBackground(cell, item.title_similarity_score);
-      
-        // ePA Description
-        cell = row.insertCell();
-        cell.textContent = item.spec1_description;
-        colorizeCellBackground(cell, item.description_similarity_score);
-      
-        // ePA Obligation
-        cell = row.insertCell();
-        cell.textContent = item.spec1_obligation;
-        colorizeComparisonCells(cell, item.spec1_obligation, item.spec2_obligation);
-      
-        // ePA Test Procedure
-        cell = row.insertCell();
-        cell.textContent = item.spec1_test_procedure;
-        colorizeComparisonCells(cell, item.spec1_test_procedure, item.spec2_test_procedure);
-      
-        // eRP Requirement Number
-        cell = row.insertCell();
-        cell.textContent = item.spec2_requirement_number;
-      
-        // eRP Source
-        cell = row.insertCell();
-        cell.textContent = item.spec2_source;
-      
-        // eRP Title
-        cell = row.insertCell();
-        cell.textContent = item.spec2_title;
-        colorizeCellBackground(cell, item.title_similarity_score);
-      
-        // eRP Description
-        cell = row.insertCell();
-        cell.textContent = item.spec2_description;
-        colorizeCellBackground(cell, item.description_similarity_score);
-      
-        // eRP Obligation
-        cell = row.insertCell();
-        cell.textContent = item.spec2_obligation;
-        colorizeComparisonCells(cell, item.spec1_obligation, item.spec2_obligation);
-      
-        // eRP Test Procedure
-        cell = row.insertCell();
-        cell.textContent = item.spec2_test_procedure;
-        colorizeComparisonCells(cell, item.spec1_test_procedure, item.spec2_test_procedure);
-      
-        // Comparison Method
-        cell = row.insertCell();
-        cell.textContent = item.comparison_method;
-      
-        // Title Similarity Score
-        cell = row.insertCell();
-        cell.textContent = parseFloat(item.title_similarity_score).toFixed(2);
-        colorizeCellBackground(cell, item.title_similarity_score);
-      
-        // Description Similarity Score
-        cell = row.insertCell();
-        cell.textContent = parseFloat(item.description_similarity_score).toFixed(2);
-        colorizeCellBackground(cell, item.description_similarity_score);
-
-        // Combined Identifier
-        cell = row.insertCell();
-        cell.textContent = item.combined_identifier;
-      });
-
-      // Append the table to the container
-      container.appendChild(table);
-
-      // Initialize DataTables on the created table
-      $('#requirementsTable').DataTable({
-        "scrollX": true, // Enables horizontal scrolling
-        "autoWidth": false // Allows manual resizing of columns
-      });
-
-      // Make columns adjustable by the ColReorder plugin
-      new $.fn.dataTable.ColReorder('#requirementsTable');
+      new $.fn.dataTable.ColReorder('#similarityMatrixTable');
     })
     .catch(error => console.error('Error fetching the requirements:', error));
 });
-
-// Function to colorize cell based on similarity score
-function colorizeCellBackground(cell, score) {
-  const normalizedScore = parseFloat(score);
-  // HSL values for a softer green
-  let hue = 120; // Green color
-  let saturation = 20; // Lower saturation for a softer color
-  let lightness = 90 - (normalizedScore * 40); // Decrease lightness based on score; higher score, darker color
-
-  cell.style.backgroundColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-
-  // If the background is dark (which means high similarity), make the text white for better contrast
-  if (normalizedScore > 0.7) {
-    cell.style.color = 'white';
-  } else {
-    cell.style.color = 'black'; // For lighter backgrounds, use black text
-  }
-}
-
-// Function to colorize cell based on equality
-function colorizeComparisonCells(cell, value1, value2) {
-  let saturation = 20; // Lower saturation for a softer color
-  let lightness = 90 - (0.5 * 40); // Decrease lightness based on score; higher score, darker color
-  if (value1 === value2) {
-    cell.style.backgroundColor = `hsl(${120}, ${saturation}%, ${lightness}%)`;
-  } else {
-    cell.style.backgroundColor = `hsl(${60}, ${90}%, ${90}%)`;
-  }
-}
