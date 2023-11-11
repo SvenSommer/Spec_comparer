@@ -78,6 +78,7 @@ class DataWriter:
                 file_path TEXT,
                 category_id INTEGER,
                 type_id INTEGER,
+                status TEXT DEFAULT 'pending',
                 UNIQUE(name, version),
                 FOREIGN KEY(category_id) REFERENCES spec_categories(id),
                 FOREIGN KEY(type_id) REFERENCES spec_types(id)
@@ -275,6 +276,15 @@ class DataWriter:
         self.requirement_similarities_to_insert = []  # Clear the list after inserting
         self.conn.commit()
 
+    def set_specification_status(self, spec_id, status):
+        query = """
+        UPDATE specifications
+        SET status = ?
+        WHERE id = ?
+        """
+        with self.conn:
+            self.conn.execute(query, (status, spec_id))
+         
     def close_connection(self):
         """
         Close the database connection.

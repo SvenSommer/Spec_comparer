@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         const specifications = await fetchSpecifications('/api/specifications');
+        console.log(specifications)
         populateSpecifications(specifications);
     } catch (error) {
         console.error('Error loading the specifications:', error);
@@ -129,9 +130,14 @@ function createCheckbox(spec) {
     checkbox.id = `check-${id}`;
     checkbox.dataset.specName = spec.name;
     checkbox.onchange = toggleSelectEnabled;
+    
+    if (spec.status === 'pending') {
+        checkbox.disabled = true;
+    }
 
     return checkbox;
 }
+
 
 function createLabel(spec) {
     const id = getIdFromName(spec.name);
@@ -139,9 +145,12 @@ function createLabel(spec) {
     label.htmlFor = `check-${id}`;
     label.textContent = spec.name;
 
+    if (spec.status === 'pending') {
+        label.classList.add('label-pending');
+    }
+
     return label;
 }
-
 function createSelect(spec) {
     const id = getIdFromName(spec.name);
     const select = document.createElement('select');
@@ -153,6 +162,10 @@ function createSelect(spec) {
         const option = new Option(version, spec.ids[index]);
         select.add(option);
     });
+
+    if (spec.status !== 'pending') {
+        select.disabled = false;
+    }
 
     return select;
 }

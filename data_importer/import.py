@@ -52,12 +52,22 @@ if __name__ == "__main__":
 
             custom_comparer = CustomRequirementComparer(db_reader, db_writer, 0.2)
             specifications = db_reader.get_all_specifications()
-            for i in range(len(specifications) - 1):
-                for j in range(i + 1, len(specifications)):
-                    spec1 = specifications[i]
+            for i in range(len(specifications)):
+                spec1 = specifications[i]
+                if spec1['status'] == 'completed':
+                    continue
+                
+                for j in range(len(specifications)):
+                    if i == j or specifications[j]['status'] == 'completed':
+                        continue
+
                     spec2 = specifications[j]
                     print(f"Comparing {spec1['name']} v{spec1['version']} with {spec2['name']} v{spec2['version']}")
                     custom_comparer.compare_requirements(spec1, spec2)
+                
+                db_writer.set_specification_status(spec1['id'], 'completed')
+
+
 
         similarity_data = db_reader.get_similarity_counts()
         format_similarity_counts(similarity_data)

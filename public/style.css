@@ -187,3 +187,6 @@ button:hover {
     opacity: 1;
     visibility: visible;
 }
+.label-pending {
+    color: grey;
+}

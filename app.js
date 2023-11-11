@@ -25,6 +25,7 @@ app.get('/api/specifications', (req, res) => {
           s.name, 
           GROUP_CONCAT(DISTINCT s.version) as versions, 
           GROUP_CONCAT(DISTINCT s.id) as ids,
+          GROUP_CONCAT(DISTINCT s.status) as status,
           GROUP_CONCAT(DISTINCT t.name) as types,
           GROUP_CONCAT(DISTINCT c.name) as categories,
           GROUP_CONCAT(DISTINCT t.id) as type_ids,
