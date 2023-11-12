@@ -35,7 +35,7 @@ function fetchMatrixData(selectedSpecIds, threshold = 0.75) {
     .then(data => {
       const specs = new Set(data.flatMap(({ spec1_name, spec1_version, spec2_name, spec2_version }) =>
         [`${spec1_name} V${spec1_version}`, `${spec2_name} V${spec2_version}`]));
-     createMatrixTable([...specs], data, threshold);
+      createMatrixTable([...specs], data, threshold);
     })
     .catch(error => console.error('There has been a problem with your fetch operation:', error));
 }
@@ -107,18 +107,18 @@ const createPlaceholderTable = (specsArray) => {
   // Entfernen Sie alle Kindelemente vom Container
   while (container.firstChild) {
     container.removeChild(container.firstChild);
-    }
+  }
 
   createTableElement(specsArray, (td, spec1, spec2) => {
-    console.log("spec1",spec1)
-    console.log("spec2",spec2)
+    console.log("spec1", spec1)
+    console.log("spec2", spec2)
     td.textContent = spec1 === spec2 ? '-' : '0';
   });
 };
 
 const createMatrixTable = (specs, data, threshold) => {
   let table = document.getElementById('gTable');
-  const maxSimilarity = Math.max(...data.map(item => item.similarity_count || 0));
+
 
   if (!table) {
     createPlaceholderTable(specs);
@@ -157,7 +157,6 @@ const createMatrixTable = (specs, data, threshold) => {
           totalRequirements = similarity.spec2_req_count;
           td.textContent = `${uniqueRequirements} von ${totalRequirements}`;
         }
-      
         const ratio = totalRequirements > 0 ? uniqueRequirements / totalRequirements : 0;
         const { backgroundColor, textColor } = getColorForSimilarity(ratio, 0.55);
         td.style.backgroundColor = backgroundColor;
@@ -175,7 +174,7 @@ const createMatrixTable = (specs, data, threshold) => {
         td.style.cursor = 'default';
         td.onclick = null;
       }
-      
+
     }
   }
 };

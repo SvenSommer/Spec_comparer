@@ -190,3 +190,40 @@ button:hover {
 .label-pending {
     color: grey;
 }
+
+.breadcrumb {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .breadcrumb-item {
+    margin-right: 0.5rem;
+  }
+  
+  .breadcrumb-item + .breadcrumb-item:before {
+    content: '→';
+    margin-right: 0.5rem;
+  }
+  
+  .breadcrumb-item a {
+    text-decoration: none;
+    color: #0275d8;
+  }
+  
+  .breadcrumb-item a:hover {
+    text-decoration: underline;
+  }
+  
+  .breadcrumb-item.active {
+    color: #6c757d;
+    pointer-events: none;
+  }
+
+  .breadcrumb-item .active {
+    color: #6c757d; /* Farbe für inaktive Breadcrumb-Elemente */
+    pointer-events: none; /* Deaktiviert Klick-Events */
+    cursor: default; /* Ändert den Mauszeiger zu einem Standardzeiger anstatt eines Links */
+  }
+  

@@ -10,13 +10,20 @@
 
 <body>
 
+
     <div
         class="content-detail__block content-detail__block--filter-table content-detail__block--breaker content-detail__block--top-half content-detail__block--bottom-half">
+        <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item active" aria-current="page">Spezifikationsvergleich - Auswahl</li>
+            </ol>
+        </nav>
         <div class="documents-table">
             <div class="documents-table__filter">
                 <form id="specSelectionForm" class="filter filter--documentsearch js-documentsearch-filter"
                     onsubmit="redirectToMatrix(event)">
                     <h1 class="headline headline--3 filter__headline">Spezifikationsvergleich</h1>
+                    <p>Bitte wähle mindestens zwei Spezifikationen für einen Vergleich der Anforderungen aus</p>
                     <div id="requirements-container" class="filter__data">
                         <!-- Specifications with checkboxes and drop-downs will be dynamically inserted here -->
                     </div>
@@ -32,7 +39,6 @@
         </div>
     </div>
     </div>
-
     <script src="index.js"></script>
 </body>
 
