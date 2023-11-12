@@ -76,7 +76,7 @@ class RequirementProcessor:
                 continue
 
             requirement = Requirement(
-                specification_id=specification.id,  # This should be the primary key ID from the specifications table
+                specification_id=specification.id,
                 source=source,
                 requirement_number=requirement_number,
                 title=title,
@@ -94,6 +94,7 @@ class RequirementProcessor:
                 logging.error(f"Error inserting data into database: {e}")
                 continue
         self.data_writer.commit_requirements()
+        self.data_writer.update_specification_req_count(specification.id)
 
         logging.info(
             f"Total number of entries added from {specification.name}: {total_entries}"

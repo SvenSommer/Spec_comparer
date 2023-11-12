@@ -138,50 +138,62 @@ app.get('/api/matrix', (req, res) => {
     }
   });
 
-  const specIds = req.query.ids;
+  let specIds = req.query.ids;
   const threshold = req.query.threshold || '0.75'; // Default threshold value if not provided
 
-  if (!specIds || !Array.isArray(specIds) || specIds.length === 0) {
-    res.status(400).send('No specification IDs provided');
+  if (!specIds || !Array.isArray(specIds) || specIds.length < 2) {
+    res.status(400).send('At least two specification IDs are required');
     return;
   }
 
-  // Convert the threshold to a number to avoid SQL injection
+  // Ensure all specIds are numbers to prevent SQL injection
+  specIds = specIds.map(Number);
+  if (specIds.some(isNaN)) {
+    res.status(400).send('All specification IDs must be numbers');
+    return;
+  }
+
+  // Generate all unique pairs of specIds for the WHERE clause
+  const pairs = [];
+  for (let i = 0; i < specIds.length; i++) {
+    for (let j = i + 1; j < specIds.length; j++) {
+      pairs.push(`(rs.specification1_id = ${specIds[i]} AND rs.specification2_id = ${specIds[j]})`);
+    }
+  }
+  const wherePairs = pairs.join(' OR ');
+
   const thresholdValue = parseFloat(threshold);
   if (isNaN(thresholdValue) || thresholdValue < 0.20 || thresholdValue > 1) {
     res.status(400).send('Invalid threshold value');
     return;
   }
 
-  const placeholders = specIds.map(() => '?').join(',');
   const sql = `
-    SELECT 
-      r1.specification_id AS spec1_id, 
-      s1.name AS spec1_name, 
-      s1.version AS spec1_version, 
-      r2.specification_id AS spec2_id, 
-      s2.name AS spec2_name, 
-      s2.version AS spec2_version, 
-      COUNT(*) AS similarity_count
-    FROM 
-      requirement_similarities rs
-    JOIN 
-      requirements r1 ON rs.requirement1_id = r1.id
-    JOIN 
-      requirements r2 ON rs.requirement2_id = r2.id
-    JOIN 
-      specifications s1 ON r1.specification_id = s1.id
-    JOIN 
-      specifications s2 ON r2.specification_id = s2.id
-    WHERE 
-      r1.specification_id IN (${placeholders}) AND 
-      r2.specification_id IN (${placeholders}) AND
-      rs.description_similarity_score >= ?
-    GROUP BY 
-      r1.specification_id, r2.specification_id
+  SELECT 
+  s1.id AS spec1_id,
+  s1.name AS spec1_name,
+  s1.version AS spec1_version,
+  s1.req_count AS spec1_req_count,
+  COALESCE(COUNT(DISTINCT rs.requirement1_number), 0) AS spec1_unique_requirements,
+  s2.id AS spec2_id,
+  s2.name AS spec2_name,
+  s2.version AS spec2_version,
+  s2.req_count AS spec2_req_count,
+  COALESCE(COUNT(DISTINCT rs.requirement2_number), 0) AS spec2_unique_requirements
+FROM 
+  requirement_similarities rs
+JOIN 
+  specifications s1 ON rs.specification1_id = s1.id
+JOIN 
+  specifications s2 ON rs.specification2_id = s2.id
+WHERE 
+  rs.description_similarity_score >= ? AND (${wherePairs})
+GROUP BY 
+  s1.id, s2.id
+
   `;
 
-  db.all(sql, [...specIds, ...specIds, thresholdValue], (err, rows) => {
+  db.all(sql, [thresholdValue], (err, rows) => {
     if (err) {
       console.error(err.message);
       res.status(500).send('Error executing the query');
@@ -191,6 +203,7 @@ app.get('/api/matrix', (req, res) => {
     db.close();
   });
 });
+
 
 app.get('/api/specs', (req, res) => {
   let db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {

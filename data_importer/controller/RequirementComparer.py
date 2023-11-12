@@ -32,6 +32,8 @@ class RequirementComparer(ABC):
                         specification2["id"],
                         spec1_req["id"],
                         spec2_req["id"],
+                        spec1_req["requirement_number"],
+                        spec2_req["requirement_number"],
                         title_similarity,
                         description_similarity,
                         self.get_comparison_method()

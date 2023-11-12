@@ -1,11 +1,17 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    let specifications;  // Declare specifications outside the try-catch so it's in scope for both
     try {
-        const specifications = await fetchSpecifications('/api/specifications');
-        console.log(specifications)
-        populateSpecifications(specifications);
+        specifications = await fetchSpecifications('/api/specifications');
     } catch (error) {
         console.error('Error loading the specifications:', error);
+        return;  // Exit the function if the specifications couldn't be fetched
     }
+    
+     try {
+        populateSpecifications(specifications);
+    } catch (error) {
+        console.error('Error showing the specs:', error);
+    } 
 });
 
 // Fetch specifications from the server
@@ -57,7 +63,11 @@ function createCollapsibleElement(headerContent, headerType) {
 }
 
 function populateSpecifications(specifications) {
-    const specContainer = document.getElementById('specifications-container');
+    const specContainer = document.getElementById('requirements-container');
+    if (!specContainer) {
+        console.error('specContainer not found');
+        return;
+    }
     const fragments = document.createDocumentFragment();
 
     const groupedByCategory = groupBy(specifications, spec => spec.categories[0]);
@@ -65,7 +75,6 @@ function populateSpecifications(specifications) {
     Object.entries(groupedByCategory).forEach(([category, specs]) => {
         const { containerDiv: categoryDiv, contentDiv: categoryContentDiv } = createCollapsibleElement(category, 'h3');
         categoryDiv.className = 'category';
-
         const groupedByType = groupBy(specs, spec => spec.types[0]);
 
         Object.entries(groupedByType).forEach(([type, specs]) => {
@@ -85,7 +94,6 @@ function populateSpecifications(specifications) {
 
     specContainer.appendChild(fragments);
 }
-
 function groupBy(array, keyGetter) {
     return array.reduce((acc, item) => {
         const key = keyGetter(item);
@@ -130,7 +138,7 @@ function createCheckbox(spec) {
     checkbox.id = `check-${id}`;
     checkbox.dataset.specName = spec.name;
     checkbox.onchange = toggleSelectEnabled;
-    
+
     if (spec.status === 'pending') {
         checkbox.disabled = true;
     }
@@ -188,27 +196,27 @@ function showMessage(message) {
     const messageElement = document.getElementById('specMessage');
     messageElement.textContent = message;
     messageElement.classList.add('visible');
-  }
-  
-  function hideMessage() {
+}
+
+function hideMessage() {
     const messageElement = document.getElementById('specMessage');
     messageElement.classList.remove('visible');
-  }
-  
-  function redirectToMatrix(event) {
+}
+
+function redirectToMatrix(event) {
     event.preventDefault();
     const selectedSpecs = getSelectedSpecifications();
-  
+
     if (selectedSpecs.length < 2) {
-      showMessage('Bitte wähle mindestens zwei Spezifikationen zum Vergleichen aus.');
-      // Wait for 3 seconds before fading out
-      setTimeout(hideMessage, 3000);
+        showMessage('Bitte wähle mindestens zwei Spezifikationen zum Vergleichen aus.');
+        // Wait for 3 seconds before fading out
+        setTimeout(hideMessage, 3000);
     } else {
-      const queryString = selectedSpecs.map(id => `ids=${id}`).join('&');
-      window.location.href = `matrix.html?${queryString}`;
+        const queryString = selectedSpecs.map(id => `ids=${id}`).join('&');
+        window.location.href = `matrix.html?${queryString}`;
     }
-  }
-  
+}
+
 
 function getSelectedSpecificationsQueryString() {
     return Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))

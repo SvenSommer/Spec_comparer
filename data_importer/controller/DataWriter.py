@@ -7,9 +7,9 @@ class DataWriter:
         self.conn = conn
         self.cursor = self.conn.cursor()
         self.conn.row_factory = self.dict_factory
-        self.local_cache = {}  
+        self.local_cache = {}
         self.configure_database(overwrite)
-        self.populate_static_data()  
+        self.populate_static_data()
         self.requirements_to_insert = []
         self.requirement_similarities_to_insert = []
 
@@ -17,14 +17,18 @@ class DataWriter:
         if (table_name, entity_name) in self.local_cache:
             return self.local_cache[(table_name, entity_name)]
 
-        self.cursor.execute(f"SELECT id FROM {table_name} WHERE name = ?", (entity_name,))
+        self.cursor.execute(
+            f"SELECT id FROM {table_name} WHERE name = ?", (entity_name,)
+        )
         result = self.cursor.fetchone()
 
         if result:
             self.local_cache[(table_name, entity_name)] = result[0]
             return result[0]
         else:
-            self.cursor.execute(f"INSERT INTO {table_name} (name) VALUES (?)", (entity_name,))
+            self.cursor.execute(
+                f"INSERT INTO {table_name} (name) VALUES (?)", (entity_name,)
+            )
             self.conn.commit()
             self.local_cache[(table_name, entity_name)] = self.cursor.lastrowid
             return self.cursor.lastrowid
@@ -49,7 +53,7 @@ class DataWriter:
             "req_sources": "simple",
             "req_obligations": "simple",
             "comparison_methods": "simple",
-            "req_test_procedures": "simple"
+            "req_test_procedures": "simple",
         }
 
         if overwrite:
@@ -63,8 +67,6 @@ class DataWriter:
         self.create_requirements_table()
         self.create_requirement_similarities_table()
         self.conn.commit()
-        
-
 
     def create_specifications_table(self):
         self.cursor.execute(
@@ -77,6 +79,7 @@ class DataWriter:
                 file_path TEXT,
                 category_id INTEGER,
                 type_id INTEGER,
+                req_count INTEGER,
                 status TEXT DEFAULT 'pending',
                 UNIQUE(name, version),
                 FOREIGN KEY(category_id) REFERENCES spec_categories(id),
@@ -106,8 +109,6 @@ class DataWriter:
             """
         )
 
-    
-
     def create_requirement_similarities_table(self):
         self.cursor.execute(
             """
@@ -117,6 +118,8 @@ class DataWriter:
                 specification2_id INTEGER,
                 requirement1_id INTEGER,
                 requirement2_id INTEGER,
+                requirement1_number TEXT,
+                requirement2_number TEXT,
                 title_similarity_score REAL,
                 description_similarity_score REAL,
                 comparison_method_id INTEGER,
@@ -127,39 +130,39 @@ class DataWriter:
             """
         )
 
-
-
     def create_standard_table(self, table_name):
-        self.cursor.execute( f"""
+        self.cursor.execute(
+            f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             id INTEGER PRIMARY KEY,
             name TEXT UNIQUE
         )
-        """)
+        """
+        )
 
     def populate_static_data(self):
         static_data = [
-            ('Konzepte', 'Spezifikationsdokumente'),
-            ('Systemlösung', 'Spezifikationsdokumente'),
-            ('Spezifikationen', 'Spezifikationsdokumente'),
-            ('Feature-Spezifikationen', 'Spezifikationsdokumente'),
-            ('Richtlinien', 'Spezifikationsdokumente'),
-            ('Produkttyp Steckbriefe', 'Steckbriefe'),
-            ('Anbietertyp Steckbriefe', 'Steckbriefe'),
-            ('Anwendungssteckbrief', 'Steckbriefe'),
-            ('Verzeichnis', 'Steckbriefe'),
-            ('Unbekannt', 'Unbekannt')
-            ]
+            ("Konzepte", "Spezifikationsdokumente"),
+            ("Systemlösung", "Spezifikationsdokumente"),
+            ("Spezifikationen", "Spezifikationsdokumente"),
+            ("Feature-Spezifikationen", "Spezifikationsdokumente"),
+            ("Richtlinien", "Spezifikationsdokumente"),
+            ("Produkttyp Steckbriefe", "Steckbriefe"),
+            ("Anbietertyp Steckbriefe", "Steckbriefe"),
+            ("Anwendungssteckbrief", "Steckbriefe"),
+            ("Verzeichnis", "Steckbriefe"),
+            ("Unbekannt", "Unbekannt"),
+        ]
 
         for type_name, category_name in static_data:
-            self.get_or_create_id('spec_categories', category_name)
-            self.get_or_create_id('spec_types', type_name)
-
-
+            self.get_or_create_id("spec_categories", category_name)
+            self.get_or_create_id("spec_types", type_name)
 
     def get_or_create_specification(self, parsed_file):
-        category_id = self.get_or_create_id('spec_categories', parsed_file.category_type)
-        type_id = self.get_or_create_id('spec_types', parsed_file.spec_type)
+        category_id = self.get_or_create_id(
+            "spec_categories", parsed_file.category_type
+        )
+        type_id = self.get_or_create_id("spec_types", parsed_file.spec_type)
         self.cursor.execute(
             """
             INSERT INTO specifications (name, version, fullname, file_path, category_id, type_id)
@@ -171,7 +174,7 @@ class DataWriter:
                 parsed_file.filename,
                 parsed_file.file_path,
                 category_id,
-                type_id
+                type_id,
             ),
         )
         self.conn.commit()
@@ -202,23 +205,54 @@ class DataWriter:
 
         return spec
 
+    def update_specification_req_count(self, spec_id):
+        """
+        Updates the req_count column in the specifications table for a given spec_id.
+        The function counts the number of related entries in the requirements table
+        and updates the req_count for the specified specification.
+        """
+        # Count the number of requirements for the given specification ID
+        self.cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM requirements
+            WHERE specification_id = ?
+            """,
+            (spec_id,),
+        )
+        req_count = self.cursor.fetchone()[0]
+
+        # Update the req_count column in the specifications table
+        self.cursor.execute(
+            """
+            UPDATE specifications
+            SET req_count = ?
+            WHERE id = ?
+            """,
+            (req_count, spec_id),
+        )
+        self.conn.commit()
 
     def add_requirement(self, requirement):
-        source_id = self.get_or_create_id('req_sources', requirement.source)
-        obligation_id = self.get_or_create_id('req_obligations', requirement.obligation)
-        test_procedure_id = self.get_or_create_id('req_test_procedures', requirement.test_procedure)
+        source_id = self.get_or_create_id("req_sources", requirement.source)
+        obligation_id = self.get_or_create_id("req_obligations", requirement.obligation)
+        test_procedure_id = self.get_or_create_id(
+            "req_test_procedures", requirement.test_procedure
+        )
 
-        self.requirements_to_insert.append((
-            requirement.specification_id,
-            source_id,
-            requirement.requirement_number,
-            requirement.title,
-            requirement.description,
-            requirement.processed_title,
-            requirement.processed_description,
-            obligation_id,
-            test_procedure_id,
-        ))
+        self.requirements_to_insert.append(
+            (
+                requirement.specification_id,
+                source_id,
+                requirement.requirement_number,
+                requirement.title,
+                requirement.description,
+                requirement.processed_title,
+                requirement.processed_description,
+                obligation_id,
+                test_procedure_id,
+            )
+        )
 
     def commit_requirements(self):
         self.cursor.executemany(
@@ -229,7 +263,7 @@ class DataWriter:
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            self.requirements_to_insert
+            self.requirements_to_insert,
         )
         self.requirements_to_insert = []  # Clear the list after inserting
         self.conn.commit()
@@ -240,6 +274,8 @@ class DataWriter:
         spec2_id: int,
         requirement1_id: int,
         requirement2_id: int,
+        requirement1_number: str,
+        requirement2_number: str,
         title_similarity: float,
         description_similarity: float,
         comparison_method: str,
@@ -247,18 +283,22 @@ class DataWriter:
         combined_identifier = f"{requirement1_id}_{requirement2_id}"
         title_similarity_rounded = round(title_similarity, 3)
         description_similarity_rounded = round(description_similarity, 3)
-        method_id = self.get_or_create_id('comparison_methods', comparison_method)
+        method_id = self.get_or_create_id("comparison_methods", comparison_method)
 
-        self.requirement_similarities_to_insert.append((
-            combined_identifier,
-            spec1_id,
-            spec2_id,
-            requirement1_id,
-            requirement2_id,
-            title_similarity_rounded,  
-            description_similarity_rounded, 
-            method_id,
-        ))
+        self.requirement_similarities_to_insert.append(
+            (
+                combined_identifier,
+                spec1_id,
+                spec2_id,
+                requirement1_id,
+                requirement2_id,
+                requirement1_number,
+                requirement2_number,
+                title_similarity_rounded,
+                description_similarity_rounded,
+                method_id,
+            )
+        )
 
     def commit_requirement_similarities(self):
         try:
@@ -270,13 +310,15 @@ class DataWriter:
                     specification2_id,
                     requirement1_id,
                     requirement2_id,
+                    requirement1_number,
+                    requirement2_number,
                     title_similarity_score,
                     description_similarity_score,
                     comparison_method_id
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?)
                 """,
-                self.requirement_similarities_to_insert
+                self.requirement_similarities_to_insert,
             )
         except sqlite3.IntegrityError as e:
             print(f"An error occurred: {e}")
@@ -291,10 +333,9 @@ class DataWriter:
         """
         with self.conn:
             self.conn.execute(query, (status, spec_id))
-         
+
     def close_connection(self):
         """
         Close the database connection.
         """
         self.conn.close()
-
